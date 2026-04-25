@@ -11,7 +11,7 @@ import requests
 import threading
 import time
 
-CAMERA_URL = "http://192.168.1.65:4747/video"
+CAMERA_URL = "http://100.120.11.125:4747/video"
 SERVER_URL = "http://192.168.56.1:4747/alert"
 
 _lock       = threading.Lock()

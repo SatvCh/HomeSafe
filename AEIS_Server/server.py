@@ -34,7 +34,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ── Config ────────────────────────────────────────────────────
-PHONE_IP = "192.168.29.83"
+PHONE_IP = "192.168.1.65"
 
 # How many consecutive readings before escalating status.
 # Prevents single-packet spike from flipping to QUARANTINED.

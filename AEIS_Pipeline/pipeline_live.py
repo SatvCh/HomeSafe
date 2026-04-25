@@ -15,7 +15,7 @@ import time
 
 # ── Config ────────────────────────────────────────────────────
 LAPTOP1_URL    = "http://127.0.0.1:5000/data"  # Laptop 1 Flask server
-CAMERA_IP      = "192.168.1.65"                    # Phone / DroidCam IP
+CAMERA_IP      = "100.120.11.125"                    # Phone / DroidCam IP
 WINDOW_SEC     = 5                                  # capture window in seconds
 SEND_RETRIES   = 3                                  # retry POST on failure
 
