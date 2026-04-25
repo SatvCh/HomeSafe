@@ -1,0 +1,12 @@
+# Large datasets
+*.csv
+
+# Or specific
+raw_data*.csv
+attack_raw*.csv
+
+# ML outputs
+outputs_if/
+
+# Virtual env
+.venv/
