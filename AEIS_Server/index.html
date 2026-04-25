@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEIS — Edge Intrusion System</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════
+   AEIS Dashboard — Cyberpunk Terminal UI
+   ════════════════════════════════════════ */
+:root {
+  --bg:         #020b14;
+  --surface:    #041020;
+  --card:       #061828;
+  --border:     #0e3a5a;
+  --border-glow:#1a6090;
+  --blue:       #00d4ff;
+  --blue-dim:   #006a80;
+  --green:      #00ff88;
+  --green-dim:  #005c32;
+  --amber:      #ffb300;
+  --amber-dim:  #5c4000;
+  --red:        #ff3d3d;
+  --red-dim:    #5c0000;
+  --text:       #8ab8d4;
+  --text-bright:#c8e8f8;
+  --dim:        #2a5068;
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Orbitron', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── Animated background grid ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  animation: gridDrift 40s linear infinite;
+  pointer-events: none;
+}
+@keyframes gridDrift {
+  0%   { background-position: 0 0; }
+  100% { background-position: 32px 32px; }
+}
+
+/* ── Scan-line sweep ── */
+body::after {
+  content: '';
+  position: fixed; left: 0; right: 0; top: -4px;
+  height: 4px; z-index: 100;
+  background: linear-gradient(transparent, rgba(0,212,255,0.7), transparent);
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+}
+@keyframes scanline { to { top: 110vh; } }
+
+/* ════ LAYOUT ════ */
+.shell {
+  position: relative; z-index: 1;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: 16px;
+  min-height: 100vh;
+}
+
+/* ════ HEADER ════ */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--blue);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(0,212,255,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.shield {
+  width: 48px; height: 48px;
+  border: 2px solid var(--blue);
+  border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 22px;
+  background: rgba(0,212,255,0.06);
+  box-shadow: 0 0 14px rgba(0,212,255,0.2), inset 0 0 8px rgba(0,212,255,0.05);
+  animation: shieldPulse 3s ease-in-out infinite;
+}
+@keyframes shieldPulse {
+  0%,100% { box-shadow: 0 0 14px rgba(0,212,255,0.2), inset 0 0 8px rgba(0,212,255,0.05); }
+  50%      { box-shadow: 0 0 28px rgba(0,212,255,0.4), inset 0 0 14px rgba(0,212,255,0.1); }
+}
+.brand h1 {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--blue);
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(0,212,255,0.5);
+}
+.brand p {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.header-right { display: flex; align-items: center; gap: 16px; }
+.live-badge {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 14px;
+  border: 1px solid var(--green);
+  border-radius: 20px;
+  background: rgba(0,255,136,0.05);
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: var(--green);
+  text-transform: uppercase;
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+#clock {
+  font-family: var(--display);
+  font-size: 0.85rem;
+  color: var(--text);
+  letter-spacing: 2px;
+}
+
+/* ════ STATUS BANNER ════ */
+#statusBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  background: var(--card);
+  transition: border-color 0.5s, background 0.5s, box-shadow 0.5s;
+  position: relative;
+  overflow: hidden;
+}
+#statusBanner.NORMAL {
+  border-color: var(--green);
+  background: rgba(0,255,136,0.03);
+  box-shadow: 0 0 30px rgba(0,255,136,0.08);
+}
+#statusBanner.SUSPICIOUS {
+  border-color: var(--amber);
+  background: rgba(255,179,0,0.05);
+  box-shadow: 0 0 30px rgba(255,179,0,0.12);
+  animation: bannerAmber 2s ease-in-out infinite;
+}
+#statusBanner.QUARANTINED {
+  border-color: var(--red);
+  background: rgba(255,61,61,0.07);
+  box-shadow: 0 0 40px rgba(255,61,61,0.2);
+  animation: bannerRed 0.9s ease-in-out infinite;
+}
+@keyframes bannerAmber {
+  0%,100%{ box-shadow:0 0 20px rgba(255,179,0,0.1); }
+  50%    { box-shadow:0 0 40px rgba(255,179,0,0.25); }
+}
+@keyframes bannerRed {
+  0%,100%{ box-shadow:0 0 30px rgba(255,61,61,0.15); }
+  50%    { box-shadow:0 0 60px rgba(255,61,61,0.35); }
+}
+
+.banner-label {
+  font-size: 0.58rem;
+  letter-spacing: 3px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+#bannerStatus {
+  font-family: var(--display);
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: 6px;
+  transition: color 0.4s, text-shadow 0.4s;
+}
+#bannerStatus.NORMAL      { color:var(--green); text-shadow:0 0 30px rgba(0,255,136,0.6); }
+#bannerStatus.SUSPICIOUS  { color:var(--amber); text-shadow:0 0 30px rgba(255,179,0,0.6); }
+#bannerStatus.QUARANTINED { color:var(--red);   text-shadow:0 0 30px rgba(255,61,61,0.8); }
+
+/* Threat bar */
+.threat-row { display:flex; align-items:center; gap:12px; margin-top:10px; }
+.threat-label { font-size:0.6rem; letter-spacing:2px; color:var(--dim); }
+.threat-bar {
+  display:flex; gap:4px;
+}
+.threat-seg {
+  width: 28px; height: 8px; border-radius: 2px;
+  background: var(--border);
+  transition: background 0.4s;
+}
+.banner-right { text-align: right; }
+.meta-row { display:flex; flex-direction:column; gap:5px; }
+.meta-item { font-size:0.65rem; color:var(--dim); }
+.meta-item span { color:var(--text-bright); margin-left:6px; }
+
+/* ════ METRICS ROW ════ */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.metric-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.metric-card::after {
+  content:'';
+  position:absolute; bottom:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+  transform: scaleX(0);
+  transition: transform 0.4s;
+}
+.metric-card.flash::after { transform: scaleX(1); }
+.metric-card.flash { animation: cardFlash 0.5s ease; }
+@keyframes cardFlash {
+  0% { background: rgba(0,212,255,0.06); }
+  100% { background: var(--card); }
+}
+.m-label {
+  font-size: 0.55rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+.m-value {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--blue);
+  transition: color 0.3s;
+  line-height: 1;
+}
+.m-value.big { font-size: 1.1rem; }
+.m-unit { font-size: 0.55rem; color: var(--dim); margin-top: 6px; }
+.m-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.m-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--blue);
+  width: 0%;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+}
+
+/* ════ BOTTOM ROW ════ */
+.bottom-row {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 12px;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 18px 20px;
+}
+.panel-title {
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.panel-title::before {
+  content:'';
+  width:2px; height:12px;
+  background: var(--blue);
+  border-radius: 1px;
+}
+
+/* ════ EVENT LOG ════ */
+#logList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+#logList::-webkit-scrollbar { width: 3px; }
+#logList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.log-item {
+  display: flex;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 3px;
+  background: rgba(0,212,255,0.03);
+  border-left: 3px solid var(--blue-dim);
+  font-size: 0.65rem;
+  animation: logSlide 0.3s ease;
+}
+@keyframes logSlide { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+.log-item.NORMAL      { border-left-color: var(--green-dim); }
+.log-item.SUSPICIOUS  { border-left-color: var(--amber-dim); color: var(--amber); }
+.log-item.QUARANTINED { border-left-color: var(--red-dim); color: var(--red); background: rgba(255,61,61,0.05); }
+.log-time { color: var(--dim); flex-shrink: 0; font-size: 0.6rem; }
+
+/* ════ OVERRIDE BAR ════ */
+.override-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+.override-label {
+  font-size: 0.55rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.ovr-btn {
+  padding: 5px 14px;
+  border-radius: 3px;
+  border: 1px solid;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  background: transparent;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.ovr-btn:hover  { opacity: 0.75; transform: translateY(-1px); }
+.ovr-btn:active { transform: translateY(0); }
+.ovr-btn.n { border-color:var(--green); color:var(--green); }
+.ovr-btn.s { border-color:var(--amber); color:var(--amber); }
+.ovr-btn.q { border-color:var(--red);   color:var(--red);   }
+.ovr-status {
+  margin-left:auto;
+  font-size:0.55rem;
+  color:var(--dim);
+  letter-spacing:1px;
+}
+#connStatus { color:var(--green); }
+#connStatus.err { color:var(--red); }
+
+/* ════ RESPONSIVE ════ */
+@media(max-width:960px){
+  .metrics{ grid-template-columns:repeat(3,1fr); }
+  .bottom-row{ grid-template-columns:1fr; }
+}
+@media(max-width:600px){
+  .metrics{ grid-template-columns:repeat(2,1fr); }
+  #bannerStatus{ font-size:1.6rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ══ HEADER ══ -->
+  <header>
+    <div class="header-left">
+      <div class="shield">🛡</div>
+      <div class="brand">
+        <h1>AEIS</h1>
+        <p>AI-Based Edge Intrusion System &nbsp;·&nbsp; v2.0</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div>Live Monitor</div>
+      <div id="clock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- ══ STATUS BANNER ══ -->
+  <div id="statusBanner" class="NORMAL">
+    <div class="banner-left">
+      <div class="banner-label">System Status</div>
+      <div id="bannerStatus" class="NORMAL">NORMAL</div>
+      <div class="threat-row">
+        <div class="threat-label">Threat&nbsp;Level</div>
+        <div class="threat-bar">
+          <div class="threat-seg" id="ts1"></div>
+          <div class="threat-seg" id="ts2"></div>
+          <div class="threat-seg" id="ts3"></div>
+        </div>
+        <span id="threatText" style="font-size:0.65rem;color:var(--green);letter-spacing:1px">LOW</span>
+      </div>
+    </div>
+    <div class="banner-right">
+      <div class="meta-row">
+        <div class="meta-item">Device <span id="metaDevice">Android Camera</span></div>
+        <div class="meta-item">Last Update <span id="metaTime">—</span></div>
+        <div class="meta-item">Uptime <span id="metaUptime">00:00:00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ METRICS ══ -->
+  <div class="metrics">
+    <div class="metric-card" id="mc-packets">
+      <div class="m-label">Packets / Window</div>
+      <div class="m-value" id="mPackets">0</div>
+      <div class="m-unit">captured this interval</div>
+      <div class="m-bar"><div class="m-bar-fill" id="barPackets"></div></div>
+    </div>
+    <div class="metric-card" id="mc-rf">
+      <div class="m-label">RF Attack Probability</div>
+      <div class="m-value" id="mRF">0.0000</div>
+      <div class="m-unit">random forest score</div>
+      <div class="m-bar"><div class="m-bar-fill" id="barRF"></div></div>
+    </div>
+    <div class="metric-card" id="mc-iso">
+      <div class="m-label">Isolation Score</div>
+      <div class="m-value" id="mISO">0.0000</div>
+      <div class="m-unit">anomaly score (↑ worse)</div>
+      <div class="m-bar"><div class="m-bar-fill" id="barISO"></div></div>
+    </div>
+    <div class="metric-card" id="mc-dec">
+      <div class="m-label">Model Decision</div>
+      <div class="m-value big" id="mDecision">NORMAL</div>
+      <div class="m-unit">IF + RF ensemble</div>
+    </div>
+    <div class="metric-card" id="mc-total">
+      <div class="m-label">Total Readings</div>
+      <div class="m-value" id="mTotal">0</div>
+      <div class="m-unit">since session start</div>
+    </div>
+  </div>
+
+  <!-- ══ CHART + LOG ══ -->
+  <div class="bottom-row">
+    <div class="panel">
+      <div class="panel-title">Network Traffic — Live Feed</div>
+      <canvas id="trafficChart" height="160"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Event Log</div>
+      <ul id="logList"></ul>
+    </div>
+  </div>
+
+  <!-- ══ OVERRIDE / STATUS BAR ══ -->
+  <div class="override-bar">
+    <div class="override-label">Demo Override:</div>
+    <button class="ovr-btn n" onclick="forceStatus('NORMAL')">▶ NORMAL</button>
+    <button class="ovr-btn s" onclick="forceStatus('SUSPICIOUS')">▲ SUSPICIOUS</button>
+    <button class="ovr-btn q" onclick="forceStatus('QUARANTINED')">■ QUARANTINE</button>
+    <div class="ovr-status">
+      Server: <span id="connStatus">CONNECTED</span>
+      &nbsp;·&nbsp; Poll: 3s
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+/* ══════════════════════════════════════════
+   AEIS Dashboard Script
+   ══════════════════════════════════════════ */
+const SERVER = 'http://localhost:5000';
+
+// ── Chart ────────────────────────────────────────────────────
+const labels = [], chartData = [];
+const chartColors = {
+  NORMAL:      '#00ff88',
+  SUSPICIOUS:  '#ffb300',
+  QUARANTINED: '#ff3d3d',
+};
+let currentStatus = 'NORMAL';
+
+const chart = new Chart(
+  document.getElementById('trafficChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Packets / Window',
+      data: chartData,
+      borderColor: '#00d4ff',
+      backgroundColor: 'rgba(0,212,255,0.06)',
+      fill: true,
+      tension: 0.45,
+      pointRadius: 4,
+      pointBackgroundColor: '#00d4ff',
+      pointBorderColor: '#020b14',
+      pointBorderWidth: 2,
+    }]
+  },
+  options: {
+    animation: { duration: 500 },
+    responsive: true,
+    interaction: { intersect: false, mode: 'index' },
+    plugins: {
+      legend: { labels: { color: '#2a5068', font: { family: 'JetBrains Mono', size: 10 } } }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#2a5068', font: { family: 'JetBrains Mono', size: 9 } },
+        grid: { color: 'rgba(14,58,90,0.5)' }
+      },
+      y: {
+        ticks: { color: '#2a5068', font: { family: 'JetBrains Mono', size: 9 } },
+        grid: { color: 'rgba(14,58,90,0.5)' },
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+// ── Clock ─────────────────────────────────────────────────────
+function tickClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-GB');
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ── Uptime ────────────────────────────────────────────────────
+const startTime = Date.now();
+function updateUptime() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2,'0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2,'0');
+  const sec = String(s % 60).padStart(2,'0');
+  document.getElementById('metaUptime').textContent = `${h}:${m}:${sec}`;
+}
+setInterval(updateUptime, 1000);
+
+// ── Event log ─────────────────────────────────────────────────
+let _lastLogStatus = '';
+function addLog(status, msg) {
+  const list = document.getElementById('logList');
+  const li   = document.createElement('li');
+  li.className = `log-item ${status}`;
+  const t = new Date().toLocaleTimeString('en-GB');
+  li.innerHTML = `<span class="log-time">${t}</span><span>${msg}</span>`;
+  list.prepend(li);
+  while (list.children.length > 40) list.removeChild(list.lastChild);
+}
+
+// ── Flash card ────────────────────────────────────────────────
+function flash(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+
+// ── Progress bars ─────────────────────────────────────────────
+function setBar(id, pct, color) {
+  const fill = document.getElementById(id);
+  fill.style.width = Math.min(100, Math.max(0, pct)) + '%';
+  fill.style.background = color;
+}
+
+// ── Threat segments ───────────────────────────────────────────
+function setThreat(level) {
+  const colors = {
+    LOW    : { active:'#00ff88', n:1 },
+    MEDIUM : { active:'#ffb300', n:2 },
+    HIGH   : { active:'#ff3d3d', n:3 },
+  };
+  const cfg = colors[level] || colors.LOW;
+  document.getElementById('threatText').textContent = level;
+  document.getElementById('threatText').style.color = cfg.active;
+  for (let i = 1; i <= 3; i++) {
+    const seg = document.getElementById('ts'+i);
+    seg.style.background = i <= cfg.n ? cfg.active : 'var(--border)';
+    seg.style.boxShadow  = i <= cfg.n ? `0 0 8px ${cfg.active}` : 'none';
+  }
+}
+
+// ── Apply status ──────────────────────────────────────────────
+function applyStatus(status, threat, rf, iso, packets, device, time) {
+  // Banner
+  const banner    = document.getElementById('statusBanner');
+  const bannerTxt = document.getElementById('bannerStatus');
+  banner.className    = status;
+  bannerTxt.className = status;
+  bannerTxt.textContent = status;
+  setThreat(threat);
+
+  // Meta
+  document.getElementById('metaDevice').textContent = device || 'Android Camera';
+  document.getElementById('metaTime').textContent   = time;
+
+  // Metrics
+  document.getElementById('mPackets').textContent  = packets;
+  document.getElementById('mRF').textContent        = parseFloat(rf).toFixed(4);
+  document.getElementById('mISO').textContent       = parseFloat(iso).toFixed(4);
+  document.getElementById('mDecision').textContent  = status;
+
+  const decEl = document.getElementById('mDecision');
+  const colors = { NORMAL:'var(--green)', SUSPICIOUS:'var(--amber)', QUARANTINED:'var(--red)' };
+  decEl.style.color = colors[status] || 'var(--blue)';
+
+  // Bars
+  setBar('barPackets', (packets / 5000) * 100, packets > 3000 ? '#ff3d3d' : packets > 1000 ? '#ffb300' : '#00ff88');
+  setBar('barRF',  rf  * 100, rf  > 0.7 ? '#ff3d3d' : rf  > 0.4 ? '#ffb300' : '#00ff88');
+  setBar('barISO', iso * 200, iso > 0.5 ? '#ff3d3d' : iso > 0.3 ? '#ffb300' : '#00ff88');
+
+  // Chart color follows status
+  chart.data.datasets[0].borderColor     = chartColors[status] || '#00d4ff';
+  chart.data.datasets[0].backgroundColor = (chartColors[status] || '#00d4ff') + '11';
+
+  // Flash cards
+  ['mc-packets','mc-rf','mc-iso','mc-dec'].forEach(flash);
+
+  // Log on status change
+  if (status !== _lastLogStatus) {
+    addLog(status, `Status changed → ${status}  |  Threat: ${threat}`);
+    _lastLogStatus = status;
+  }
+}
+
+// ── Reading counter ───────────────────────────────────────────
+let totalReadings = 0;
+
+// ── Main poll ─────────────────────────────────────────────────
+let lastTS = 0;
+
+async function poll() {
+  try {
+    const [tRes, aRes] = await Promise.all([
+      fetch(`${SERVER}/traffic?_=${Date.now()}`),
+      fetch(`${SERVER}/alert?_=${Date.now()}`)
+    ]);
+
+    const traffic = await tRes.json();
+    const alert   = await aRes.json();
+
+    // Stale-data guard
+    const ts = alert.timestamp || 0;
+    if (ts && ts === lastTS) {
+      addLog('NORMAL', '⏸ No new data from server (stale)');
+      return;
+    }
+    lastTS = ts;
+
+    // Chart
+    const t = new Date().toLocaleTimeString('en-GB');
+    labels.push(t);
+    chartData.push(traffic.packets || 0);
+    if (labels.length > 15) { labels.shift(); chartData.shift(); }
+    chart.update();
+
+    // Status + metrics
+    applyStatus(
+      alert.status    || 'NORMAL',
+      alert.threat    || 'LOW',
+      alert.rf_prob   || 0,
+      alert.iso_score || 0,
+      traffic.packets || 0,
+      alert.device,
+      t
+    );
+
+    // Total counter
+    totalReadings++;
+    document.getElementById('mTotal').textContent = totalReadings;
+
+    // Connection indicator
+    const cs = document.getElementById('connStatus');
+    cs.textContent = 'CONNECTED';
+    cs.className   = '';
+
+  } catch(err) {
+    const cs = document.getElementById('connStatus');
+    cs.textContent = 'OFFLINE';
+    cs.className   = 'err';
+    addLog('QUARANTINED', `⚠ Server unreachable — ${err.message}`);
+  }
+}
+
+// ── Manual override ───────────────────────────────────────────
+async function forceStatus(status) {
+  try {
+    const r = await fetch(`${SERVER}/force/${status}`);
+    const d = await r.json();
+    if (d.ok) addLog(status, `🎮 Manual override → ${status}`);
+    await poll();  // immediate refresh
+  } catch(e) {
+    addLog('QUARANTINED', `Override failed: ${e.message}`);
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+addLog('NORMAL', '🟢 AEIS Dashboard initialised — monitoring started');
+poll();
+setInterval(poll, 3000);
+</script>
+</body>
+</html>
