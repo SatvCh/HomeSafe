@@ -8,15 +8,15 @@ import numpy as np
 # =========================
 # CONFIG
 # =========================
-SERVER_URL = "http://192.168.56.1:4747/alert"
+SERVER_URL = "http://192.168.29.89:4747/alert"
 
 CAMERA_URLS = [
-    "http://192.168.1.65:4747/video",
-    "http://192.168.1.65:4747/video?640x480",
-    "http://192.168.1.65:4747/video?1280x720",
-    "http://192.168.1.65:8080/video",
-    "http://192.168.1.65:8080/videofeed",
-    "http://192.168.1.65:8080/video?type=.mjpeg",
+    "http://192.168.29.36:4747/video",
+    "http://192.168.29.36:4747/video?640x480",
+    "http://192.168.29.36:4747/video?1280x720",
+    "http://192.168.29.36:8080/video",
+    "http://192.168.29.36:8080/videofeed",
+    "http://192.168.29.36:8080/video?type=.mjpeg",
 ]
 
 

@@ -7,9 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-/* ════════════════════════════════════════
-   AEIS Dashboard — Cyberpunk Terminal UI
-   ════════════════════════════════════════ */
 :root {
   --bg:         #020b14;
   --surface:    #041020;
@@ -24,17 +21,15 @@
   --amber-dim:  #5c4000;
   --red:        #ff3d3d;
   --red-dim:    #5c0000;
+  --purple:     #c084fc;
   --text:       #8ab8d4;
   --text-bright:#c8e8f8;
   --dim:        #2a5068;
   --mono: 'JetBrains Mono', monospace;
   --display: 'Orbitron', monospace;
 }
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 html, body { height: 100%; }
-
 body {
   background: var(--bg);
   color: var(--text);
@@ -43,8 +38,6 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
 }
-
-/* ── Animated background grid ── */
 body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0;
@@ -59,8 +52,6 @@ body::before {
   0%   { background-position: 0 0; }
   100% { background-position: 32px 32px; }
 }
-
-/* ── Scan-line sweep ── */
 body::after {
   content: '';
   position: fixed; left: 0; right: 0; top: -4px;
@@ -71,28 +62,27 @@ body::after {
 }
 @keyframes scanline { to { top: 110vh; } }
 
-/* ════ LAYOUT ════ */
 .shell {
   position: relative; z-index: 1;
-  max-width: 1360px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 20px 24px;
-  display: grid;
-  grid-template-rows: auto auto auto 1fr auto;
-  gap: 16px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-height: 100vh;
 }
 
-/* ════ HEADER ════ */
+/* ══ HEADER ══ */
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 12px 20px;
   background: var(--card);
   border: 1px solid var(--border);
   border-top: 3px solid var(--blue);
-  border-radius: 4px 4px 0 0;
+  border-radius: 4px;
   position: relative;
   overflow: hidden;
 }
@@ -104,315 +94,353 @@ header::before {
 }
 .header-left { display: flex; align-items: center; gap: 16px; }
 .shield {
-  width: 48px; height: 48px;
+  width: 44px; height: 44px;
   border: 2px solid var(--blue);
   border-radius: 6px;
   display: grid; place-items: center;
-  font-size: 22px;
+  font-size: 20px;
   background: rgba(0,212,255,0.06);
-  box-shadow: 0 0 14px rgba(0,212,255,0.2), inset 0 0 8px rgba(0,212,255,0.05);
+  box-shadow: 0 0 14px rgba(0,212,255,0.2);
   animation: shieldPulse 3s ease-in-out infinite;
 }
 @keyframes shieldPulse {
-  0%,100% { box-shadow: 0 0 14px rgba(0,212,255,0.2), inset 0 0 8px rgba(0,212,255,0.05); }
-  50%      { box-shadow: 0 0 28px rgba(0,212,255,0.4), inset 0 0 14px rgba(0,212,255,0.1); }
+  0%,100% { box-shadow: 0 0 14px rgba(0,212,255,0.2); }
+  50%      { box-shadow: 0 0 28px rgba(0,212,255,0.5); }
 }
 .brand h1 {
   font-family: var(--display);
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 900;
   color: var(--blue);
   letter-spacing: 4px;
   text-shadow: 0 0 20px rgba(0,212,255,0.5);
 }
-.brand p {
-  font-size: 0.6rem;
-  letter-spacing: 3px;
-  color: var(--dim);
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-.header-right { display: flex; align-items: center; gap: 16px; }
+.brand p { font-size: 0.58rem; letter-spacing: 3px; color: var(--dim); margin-top: 2px; }
+.header-right { display: flex; align-items: center; gap: 14px; }
 .live-badge {
   display: flex; align-items: center; gap: 7px;
-  padding: 6px 14px;
-  border: 1px solid var(--green);
-  border-radius: 20px;
+  padding: 5px 12px;
+  border: 1px solid var(--green); border-radius: 20px;
   background: rgba(0,255,136,0.05);
-  font-size: 0.65rem;
-  letter-spacing: 2px;
-  color: var(--green);
-  text-transform: uppercase;
+  font-size: 0.6rem; letter-spacing: 2px; color: var(--green);
 }
 .live-dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--green);
   animation: blink 1.2s ease-in-out infinite;
 }
-@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
-#clock {
-  font-family: var(--display);
-  font-size: 0.85rem;
-  color: var(--text);
-  letter-spacing: 2px;
-}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+#clock { font-family: var(--display); font-size: 0.8rem; color: var(--text); letter-spacing: 2px; }
 
-/* ════ STATUS BANNER ════ */
+/* ══ STATUS BANNER ══ */
 #statusBanner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 28px;
+  padding: 18px 24px;
   border: 2px solid var(--border);
   border-radius: 4px;
   background: var(--card);
-  transition: border-color 0.5s, background 0.5s, box-shadow 0.5s;
-  position: relative;
-  overflow: hidden;
+  transition: border-color 0.5s, box-shadow 0.5s;
+  position: relative; overflow: hidden;
 }
-#statusBanner.NORMAL {
-  border-color: var(--green);
-  background: rgba(0,255,136,0.03);
-  box-shadow: 0 0 30px rgba(0,255,136,0.08);
-}
-#statusBanner.SUSPICIOUS {
-  border-color: var(--amber);
-  background: rgba(255,179,0,0.05);
-  box-shadow: 0 0 30px rgba(255,179,0,0.12);
-  animation: bannerAmber 2s ease-in-out infinite;
-}
-#statusBanner.QUARANTINED {
-  border-color: var(--red);
-  background: rgba(255,61,61,0.07);
-  box-shadow: 0 0 40px rgba(255,61,61,0.2);
-  animation: bannerRed 0.9s ease-in-out infinite;
-}
-@keyframes bannerAmber {
-  0%,100%{ box-shadow:0 0 20px rgba(255,179,0,0.1); }
-  50%    { box-shadow:0 0 40px rgba(255,179,0,0.25); }
-}
-@keyframes bannerRed {
-  0%,100%{ box-shadow:0 0 30px rgba(255,61,61,0.15); }
-  50%    { box-shadow:0 0 60px rgba(255,61,61,0.35); }
-}
+#statusBanner.NORMAL      { border-color: var(--green); box-shadow: 0 0 30px rgba(0,255,136,0.08); }
+#statusBanner.SUSPICIOUS  { border-color: var(--amber); box-shadow: 0 0 30px rgba(255,179,0,0.15); animation: bannerAmber 2s ease-in-out infinite; }
+#statusBanner.QUARANTINED { border-color: var(--red);   box-shadow: 0 0 40px rgba(255,61,61,0.25); animation: bannerRed 0.9s ease-in-out infinite; }
+@keyframes bannerAmber { 0%,100%{box-shadow:0 0 20px rgba(255,179,0,0.1)} 50%{box-shadow:0 0 50px rgba(255,179,0,0.3)} }
+@keyframes bannerRed   { 0%,100%{box-shadow:0 0 30px rgba(255,61,61,0.15)} 50%{box-shadow:0 0 70px rgba(255,61,61,0.4)} }
 
-.banner-label {
-  font-size: 0.58rem;
-  letter-spacing: 3px;
-  color: var(--dim);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
+.banner-label { font-size: 0.55rem; letter-spacing: 3px; color: var(--dim); margin-bottom: 6px; }
 #bannerStatus {
   font-family: var(--display);
-  font-size: 2.4rem;
-  font-weight: 900;
-  letter-spacing: 6px;
+  font-size: 2.2rem; font-weight: 900; letter-spacing: 6px;
   transition: color 0.4s, text-shadow 0.4s;
 }
 #bannerStatus.NORMAL      { color:var(--green); text-shadow:0 0 30px rgba(0,255,136,0.6); }
 #bannerStatus.SUSPICIOUS  { color:var(--amber); text-shadow:0 0 30px rgba(255,179,0,0.6); }
-#bannerStatus.QUARANTINED { color:var(--red);   text-shadow:0 0 30px rgba(255,61,61,0.8); }
+#bannerStatus.QUARANTINED { color:var(--red);   text-shadow:0 0 40px rgba(255,61,61,0.8); }
 
-/* Threat bar */
-.threat-row { display:flex; align-items:center; gap:12px; margin-top:10px; }
-.threat-label { font-size:0.6rem; letter-spacing:2px; color:var(--dim); }
-.threat-bar {
-  display:flex; gap:4px;
-}
+.threat-row { display:flex; align-items:center; gap:10px; margin-top:8px; }
+.threat-label { font-size:0.58rem; letter-spacing:2px; color:var(--dim); }
+.threat-bar { display:flex; gap:4px; }
 .threat-seg {
-  width: 28px; height: 8px; border-radius: 2px;
+  width:28px; height:8px; border-radius:2px;
   background: var(--border);
-  transition: background 0.4s;
+  transition: background 0.4s, box-shadow 0.4s;
 }
+.banner-center { flex: 1; padding: 0 24px; }
+.reason-box {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 12px;
+  font-size: 0.62rem;
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 48px;
+}
+.reason-box .rl { color: var(--dim); font-size: 0.55rem; letter-spacing: 2px; margin-bottom: 4px; }
+#reasonText { color: var(--text-bright); }
+
 .banner-right { text-align: right; }
-.meta-row { display:flex; flex-direction:column; gap:5px; }
-.meta-item { font-size:0.65rem; color:var(--dim); }
+.meta-row { display:flex; flex-direction:column; gap:4px; }
+.meta-item { font-size:0.62rem; color:var(--dim); }
 .meta-item span { color:var(--text-bright); margin-left:6px; }
 
-/* ════ METRICS ROW ════ */
+/* ══ SYSTEM FLAGS ROW ══ */
+.flags-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.flag-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 0.58rem; letter-spacing: 1px;
+  background: var(--card);
+  transition: border-color 0.3s, color 0.3s;
+}
+.flag-badge.active-green { border-color: var(--green); color: var(--green); }
+.flag-badge.active-red   { border-color: var(--red);   color: var(--red); }
+.flag-badge.active-amber { border-color: var(--amber); color: var(--amber); }
+.flag-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ══ METRICS ROW ══ */
 .metrics {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 }
 .metric-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 16px 18px;
-  position: relative;
-  overflow: hidden;
+  padding: 14px 16px;
+  position: relative; overflow: hidden;
   transition: border-color 0.3s;
 }
-.metric-card::after {
-  content:'';
-  position:absolute; bottom:0; left:0; right:0; height:2px;
-  background: linear-gradient(90deg, transparent, var(--blue), transparent);
-  transform: scaleX(0);
-  transition: transform 0.4s;
-}
-.metric-card.flash::after { transform: scaleX(1); }
-.metric-card.flash { animation: cardFlash 0.5s ease; }
-@keyframes cardFlash {
-  0% { background: rgba(0,212,255,0.06); }
-  100% { background: var(--card); }
-}
-.m-label {
-  font-size: 0.55rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--dim);
-  margin-bottom: 10px;
-}
+.metric-card.flash { animation: cardFlash 0.6s ease; }
+@keyframes cardFlash { 0%{background:rgba(0,212,255,0.08)} 100%{background:var(--card)} }
+.m-label { font-size:0.52rem; letter-spacing:2px; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
 .m-value {
-  font-family: var(--display);
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--blue);
-  transition: color 0.3s;
-  line-height: 1;
+  font-family:var(--display); font-size:1.5rem; font-weight:700;
+  color:var(--blue); transition:color 0.3s; line-height:1;
 }
-.m-value.big { font-size: 1.1rem; }
-.m-unit { font-size: 0.55rem; color: var(--dim); margin-top: 6px; }
-.m-bar {
-  height: 3px;
-  background: var(--border);
-  border-radius: 2px;
-  margin-top: 10px;
-  overflow: hidden;
-}
+.m-value.sm { font-size:0.95rem; }
+.m-unit { font-size:0.52rem; color:var(--dim); margin-top:6px; }
+.m-bar { height:3px; background:var(--border); border-radius:2px; margin-top:8px; overflow:hidden; }
 .m-bar-fill {
-  height: 100%;
-  border-radius: 2px;
-  background: var(--blue);
-  width: 0%;
-  transition: width 0.6s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+  height:100%; border-radius:2px;
+  background:var(--blue); width:0%;
+  transition:width 0.6s cubic-bezier(0.4,0,0.2,1), background 0.3s;
 }
 
-/* ════ BOTTOM ROW ════ */
-.bottom-row {
+/* ══ MAIN GRID ══ */
+.main-grid {
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: 12px;
 }
+.left-col { display: flex; flex-direction: column; gap: 12px; }
+.right-col { display: flex; flex-direction: column; gap: 12px; }
+
 .panel {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 18px 20px;
+  padding: 16px 18px;
 }
 .panel-title {
-  font-size: 0.6rem;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--dim);
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  font-size:0.58rem; letter-spacing:3px; text-transform:uppercase;
+  color:var(--dim); margin-bottom:14px;
+  display:flex; align-items:center; gap:8px;
 }
-.panel-title::before {
-  content:'';
-  width:2px; height:12px;
-  background: var(--blue);
-  border-radius: 1px;
-}
+.panel-title::before { content:''; width:2px; height:12px; background:var(--blue); border-radius:1px; }
 
-/* ════ EVENT LOG ════ */
+/* ══ ATTACK SIMULATOR ══ */
+.sim-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.atk-btn {
+  display: flex; flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  cursor: pointer;
+  font-family: var(--mono);
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+}
+.atk-btn:hover { border-color: var(--blue-dim); background: rgba(0,212,255,0.04); transform: translateY(-1px); }
+.atk-btn:active { transform: translateY(0); }
+.atk-btn.selected { border-color: var(--blue); background: rgba(0,212,255,0.06); }
+.atk-btn.normal-btn  { border-color: var(--green-dim); }
+.atk-btn.normal-btn:hover { border-color: var(--green); }
+.atk-btn.normal-btn.selected { border-color: var(--green); background: rgba(0,255,136,0.05); }
+.atk-btn .atk-icon { font-size: 1.1rem; margin-bottom: 4px; }
+.atk-btn .atk-name { font-size: 0.62rem; color: var(--text-bright); font-weight: 600; letter-spacing: 1px; }
+.atk-btn .atk-desc { font-size: 0.52rem; color: var(--dim); margin-top: 2px; line-height: 1.4; }
+.atk-btn .atk-rule  { font-size: 0.5rem; color: var(--blue-dim); margin-top: 4px; letter-spacing: 1px; }
+
+.intensity-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.intensity-row label { font-size: 0.58rem; color: var(--dim); letter-spacing: 1px; white-space: nowrap; }
+#intensitySlider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+#intensitySlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--blue);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,212,255,0.5);
+}
+#intensityVal { font-size: 0.65rem; color: var(--blue); font-weight: 600; width: 32px; text-align: right; }
+
+.fire-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--blue);
+  border-radius: 3px;
+  background: rgba(0,212,255,0.06);
+  color: var(--blue);
+  font-family: var(--mono);
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.fire-btn:hover { background: rgba(0,212,255,0.12); box-shadow: 0 0 12px rgba(0,212,255,0.2); }
+.fire-btn:active { background: rgba(0,212,255,0.18); }
+.fire-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#simFeedback {
+  margin-top: 8px;
+  font-size: 0.58rem;
+  color: var(--dim);
+  min-height: 18px;
+  text-align: center;
+}
+#simFeedback.ok  { color: var(--green); }
+#simFeedback.err { color: var(--red); }
+
+/* ══ RULES PANEL ══ */
+.rule-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 6px;
+  background: var(--surface);
+  transition: border-color 0.3s;
+}
+.rule-item.hit-LOW    { border-color: var(--green-dim); }
+.rule-item.hit-MEDIUM { border-color: var(--amber); background: rgba(255,179,0,0.04); }
+.rule-item.hit-HIGH   { border-color: var(--red);   background: rgba(255,61,61,0.05); }
+.rule-num {
+  font-family: var(--display);
+  font-size: 0.65rem; font-weight: 700;
+  color: var(--blue-dim);
+  width: 18px; flex-shrink: 0; margin-top: 1px;
+}
+.rule-body { flex: 1; }
+.rule-name { font-size: 0.6rem; color: var(--text-bright); font-weight: 600; letter-spacing: 1px; margin-bottom: 2px; }
+.rule-detail { font-size: 0.55rem; color: var(--dim); line-height: 1.5; }
+.rule-val {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.rule-val.NORMAL { color: var(--green);   background: rgba(0,255,136,0.08); }
+.rule-val.LOW    { color: var(--green);   background: rgba(0,255,136,0.08); }
+.rule-val.MEDIUM { color: var(--amber);   background: rgba(255,179,0,0.1); }
+.rule-val.HIGH   { color: var(--red);     background: rgba(255,61,61,0.1); }
+
+/* ══ LOG ══ */
 #logList {
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 260px;
+  display: flex; flex-direction: column; gap: 5px;
+  max-height: 220px;
   overflow-y: auto;
   padding-right: 4px;
 }
 #logList::-webkit-scrollbar { width: 3px; }
 #logList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .log-item {
-  display: flex;
-  gap: 10px;
-  padding: 7px 10px;
+  display: flex; gap: 8px;
+  padding: 6px 8px;
   border-radius: 3px;
   background: rgba(0,212,255,0.03);
   border-left: 3px solid var(--blue-dim);
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   animation: logSlide 0.3s ease;
 }
 @keyframes logSlide { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
 .log-item.NORMAL      { border-left-color: var(--green-dim); }
 .log-item.SUSPICIOUS  { border-left-color: var(--amber-dim); color: var(--amber); }
-.log-item.QUARANTINED { border-left-color: var(--red-dim); color: var(--red); background: rgba(255,61,61,0.05); }
-.log-time { color: var(--dim); flex-shrink: 0; font-size: 0.6rem; }
+.log-item.QUARANTINED { border-left-color: var(--red-dim); color: var(--red); background: rgba(255,61,61,0.04); }
+.log-time { color: var(--dim); flex-shrink: 0; font-size: 0.55rem; }
 
-/* ════ OVERRIDE BAR ════ */
-.override-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+/* ══ FOOTER BAR ══ */
+.footer-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
   flex-wrap: wrap;
 }
-.override-label {
-  font-size: 0.55rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--dim);
-  white-space: nowrap;
-}
+.footer-label { font-size: 0.52rem; letter-spacing: 2px; color: var(--dim); white-space: nowrap; }
 .ovr-btn {
-  padding: 5px 14px;
-  border-radius: 3px;
-  border: 1px solid;
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: 3px; border: 1px solid;
+  cursor: pointer; font-family: var(--mono);
+  font-size: 0.58rem; font-weight: 600; letter-spacing: 1px;
   background: transparent;
   transition: opacity 0.15s, transform 0.1s;
 }
 .ovr-btn:hover  { opacity: 0.75; transform: translateY(-1px); }
-.ovr-btn:active { transform: translateY(0); }
 .ovr-btn.n { border-color:var(--green); color:var(--green); }
 .ovr-btn.s { border-color:var(--amber); color:var(--amber); }
-.ovr-btn.q { border-color:var(--red);   color:var(--red);   }
-.ovr-status {
-  margin-left:auto;
-  font-size:0.55rem;
-  color:var(--dim);
-  letter-spacing:1px;
-}
-#connStatus { color:var(--green); }
-#connStatus.err { color:var(--red); }
+.ovr-btn.q { border-color:var(--red);   color:var(--red); }
+.conn-info { margin-left: auto; font-size: 0.52rem; color: var(--dim); letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+#connStatus { color: var(--green); }
+#connStatus.err { color: var(--red); }
+#healBadge { color: var(--dim); }
+#healBadge.active { color: var(--amber); }
 
-/* ════ RESPONSIVE ════ */
-@media(max-width:960px){
-  .metrics{ grid-template-columns:repeat(3,1fr); }
-  .bottom-row{ grid-template-columns:1fr; }
-}
-@media(max-width:600px){
-  .metrics{ grid-template-columns:repeat(2,1fr); }
-  #bannerStatus{ font-size:1.6rem; }
+@media(max-width:960px) {
+  .metrics { grid-template-columns: repeat(2,1fr); }
+  .main-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
-
 <div class="shell">
 
-  <!-- ══ HEADER ══ -->
+  <!-- HEADER -->
   <header>
     <div class="header-left">
       <div class="shield">🛡</div>
       <div class="brand">
         <h1>AEIS</h1>
-        <p>AI-Based Edge Intrusion System &nbsp;·&nbsp; v2.0</p>
+        <p>AI-Based Edge Intrusion System &nbsp;·&nbsp; v2.1 — Rule Engine Active</p>
       </div>
     </div>
     <div class="header-right">
@@ -421,54 +449,65 @@ header::before {
     </div>
   </header>
 
-  <!-- ══ STATUS BANNER ══ -->
+  <!-- STATUS BANNER -->
   <div id="statusBanner" class="NORMAL">
     <div class="banner-left">
-      <div class="banner-label">System Status</div>
+      <div class="banner-label">System Threat Level</div>
       <div id="bannerStatus" class="NORMAL">NORMAL</div>
       <div class="threat-row">
-        <div class="threat-label">Threat&nbsp;Level</div>
+        <div class="threat-label">Severity</div>
         <div class="threat-bar">
           <div class="threat-seg" id="ts1"></div>
           <div class="threat-seg" id="ts2"></div>
           <div class="threat-seg" id="ts3"></div>
         </div>
-        <span id="threatText" style="font-size:0.65rem;color:var(--green);letter-spacing:1px">LOW</span>
+        <span id="threatText" style="font-size:0.62rem;color:var(--green);letter-spacing:1px">NORMAL</span>
+      </div>
+    </div>
+    <div class="banner-center">
+      <div class="reason-box">
+        <div class="rl">DETECTION REASON</div>
+        <div id="reasonText">Waiting for first data...</div>
       </div>
     </div>
     <div class="banner-right">
       <div class="meta-row">
         <div class="meta-item">Device <span id="metaDevice">Android Camera</span></div>
-        <div class="meta-item">Last Update <span id="metaTime">—</span></div>
+        <div class="meta-item">Updated <span id="metaTime">—</span></div>
         <div class="meta-item">Uptime <span id="metaUptime">00:00:00</span></div>
+        <div class="meta-item">Confidence <span id="metaConf">0.0%</span></div>
       </div>
     </div>
   </div>
 
-  <!-- ══ METRICS ══ -->
+  <!-- SYSTEM FLAGS -->
+  <div class="flags-row">
+    <div class="flag-badge active-green" id="flagCamera"><div class="flag-dot"></div>Camera: ONLINE</div>
+    <div class="flag-badge" id="flagMonitor"><div class="flag-dot"></div>Monitoring: OFF</div>
+    <div class="flag-badge" id="flagBlocked"><div class="flag-dot"></div>IP Blocks: 0</div>
+    <div class="flag-badge" id="flagHeal"><div class="flag-dot"></div>Heal: NORMAL</div>
+    <div class="flag-badge" id="flagClean"><div class="flag-dot"></div>Clean Windows: 0</div>
+  </div>
+
+  <!-- METRICS -->
   <div class="metrics">
     <div class="metric-card" id="mc-packets">
       <div class="m-label">Packets / Window</div>
       <div class="m-value" id="mPackets">0</div>
-      <div class="m-unit">captured this interval</div>
+      <div class="m-unit">Rule 1 · DDoS threshold: 1500</div>
       <div class="m-bar"><div class="m-bar-fill" id="barPackets"></div></div>
     </div>
-    <div class="metric-card" id="mc-rf">
-      <div class="m-label">RF Attack Probability</div>
-      <div class="m-value" id="mRF">0.0000</div>
-      <div class="m-unit">random forest score</div>
-      <div class="m-bar"><div class="m-bar-fill" id="barRF"></div></div>
+    <div class="metric-card" id="mc-size">
+      <div class="m-label">Avg Packet Size</div>
+      <div class="m-value" id="mSize">0</div>
+      <div class="m-unit">bytes · Rule 2 · Exfil threshold: 1400B</div>
+      <div class="m-bar"><div class="m-bar-fill" id="barSize"></div></div>
     </div>
-    <div class="metric-card" id="mc-iso">
-      <div class="m-label">Isolation Score</div>
-      <div class="m-value" id="mISO">0.0000</div>
-      <div class="m-unit">anomaly score (↑ worse)</div>
-      <div class="m-bar"><div class="m-bar-fill" id="barISO"></div></div>
-    </div>
-    <div class="metric-card" id="mc-dec">
-      <div class="m-label">Model Decision</div>
-      <div class="m-value big" id="mDecision">NORMAL</div>
-      <div class="m-unit">IF + RF ensemble</div>
+    <div class="metric-card" id="mc-dest">
+      <div class="m-label">Dest IPs / Window</div>
+      <div class="m-value" id="mDest">0</div>
+      <div class="m-unit">unique IPs · Rule 3 · Scan threshold: 25</div>
+      <div class="m-bar"><div class="m-bar-fill" id="barDest"></div></div>
     </div>
     <div class="metric-card" id="mc-total">
       <div class="m-label">Total Readings</div>
@@ -477,49 +516,149 @@ header::before {
     </div>
   </div>
 
-  <!-- ══ CHART + LOG ══ -->
-  <div class="bottom-row">
-    <div class="panel">
-      <div class="panel-title">Network Traffic — Live Feed</div>
-      <canvas id="trafficChart" height="160"></canvas>
+  <!-- MAIN GRID: chart+log left, sim+rules right -->
+  <div class="main-grid">
+    <div class="left-col">
+      <!-- CHART -->
+      <div class="panel">
+        <div class="panel-title">Network Traffic — Live Packet Feed</div>
+        <canvas id="trafficChart" height="130"></canvas>
+      </div>
+      <!-- EVENT LOG -->
+      <div class="panel">
+        <div class="panel-title">Event Log</div>
+        <ul id="logList"></ul>
+      </div>
     </div>
-    <div class="panel">
-      <div class="panel-title">Event Log</div>
-      <ul id="logList"></ul>
+
+    <div class="right-col">
+      <!-- ATTACK SIMULATOR -->
+      <div class="panel">
+        <div class="panel-title">Attack Simulator</div>
+        <div class="sim-grid">
+          <button class="atk-btn normal-btn selected" data-type="normal" onclick="selectAttack(this)">
+            <div class="atk-icon">🟢</div>
+            <div class="atk-name">Normal Traffic</div>
+            <div class="atk-desc">Baseline healthy camera stream</div>
+            <div class="atk-rule">No rules triggered</div>
+          </button>
+          <button class="atk-btn" data-type="ddos" onclick="selectAttack(this)">
+            <div class="atk-icon">🔴</div>
+            <div class="atk-name">DDoS / Flood</div>
+            <div class="atk-desc">Massive packet volume flood</div>
+            <div class="atk-rule">Rule 1: Packet Count ↑↑</div>
+          </button>
+          <button class="atk-btn" data-type="port_scan" onclick="selectAttack(this)">
+            <div class="atk-icon">🟡</div>
+            <div class="atk-name">Port / IP Scan</div>
+            <div class="atk-desc">Rapid destination IP switching</div>
+            <div class="atk-rule">Rule 3: Dest Spread ↑↑</div>
+          </button>
+          <button class="atk-btn" data-type="data_exfiltration" onclick="selectAttack(this)">
+            <div class="atk-icon">🟠</div>
+            <div class="atk-name">Data Exfiltration</div>
+            <div class="atk-desc">Large bulk outbound frames</div>
+            <div class="atk-rule">Rule 2: Packet Size ↑↑</div>
+          </button>
+          <button class="atk-btn" data-type="suspicious_timing" onclick="selectAttack(this)" style="grid-column:span 2">
+            <div class="atk-icon">🕐</div>
+            <div class="atk-name">Suspicious Timing (Off-Hours)</div>
+            <div class="atk-desc">Low-volume access at 3 AM — insider threat / malware beacon</div>
+            <div class="atk-rule">Rule 4: Activity Hour (off-hours)</div>
+          </button>
+        </div>
+
+        <div class="intensity-row">
+          <label>Intensity:</label>
+          <input type="range" id="intensitySlider" min="0.1" max="1.0" step="0.1" value="1.0" oninput="updateIntensity(this)">
+          <span id="intensityVal">1.0</span>
+        </div>
+
+        <button class="fire-btn" id="fireBtn" onclick="fireAttack()">
+          ▶ FIRE SIMULATION
+        </button>
+        <div id="simFeedback">Select an attack type and press Fire</div>
+      </div>
+
+      <!-- RULES STATUS PANEL -->
+      <div class="panel">
+        <div class="panel-title">Detection Rules — Live Status</div>
+
+        <div class="rule-item" id="rule1">
+          <div class="rule-num">R1</div>
+          <div class="rule-body">
+            <div class="rule-name">PACKET FLOOD — DDoS</div>
+            <div class="rule-detail">LOW≥300 · MED≥700 · HIGH≥1500 pkt/window</div>
+          </div>
+          <div class="rule-val NORMAL" id="r1val">–</div>
+        </div>
+
+        <div class="rule-item" id="rule2">
+          <div class="rule-num">R2</div>
+          <div class="rule-body">
+            <div class="rule-name">PACKET SIZE — Exfiltration</div>
+            <div class="rule-detail">LOW≥1000B · MED≥1200B · HIGH≥1400B avg</div>
+          </div>
+          <div class="rule-val NORMAL" id="r2val">–</div>
+        </div>
+
+        <div class="rule-item" id="rule3">
+          <div class="rule-num">R3</div>
+          <div class="rule-body">
+            <div class="rule-name">DEST SPREAD — IP/Port Scan</div>
+            <div class="rule-detail">LOW≥5 · MED≥12 · HIGH≥25 unique IPs</div>
+          </div>
+          <div class="rule-val NORMAL" id="r3val">–</div>
+        </div>
+
+        <div class="rule-item" id="rule4">
+          <div class="rule-num">R4</div>
+          <div class="rule-body">
+            <div class="rule-name">ACTIVITY HOUR — Off-Hours</div>
+            <div class="rule-detail">Suspicious: 22:00–05:59 → always MEDIUM</div>
+          </div>
+          <div class="rule-val NORMAL" id="r4val">–</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- ══ OVERRIDE / STATUS BAR ══ -->
-  <div class="override-bar">
-    <div class="override-label">Demo Override:</div>
+  <!-- FOOTER -->
+  <div class="footer-bar">
+    <div class="footer-label">Manual Override:</div>
     <button class="ovr-btn n" onclick="forceStatus('NORMAL')">▶ NORMAL</button>
     <button class="ovr-btn s" onclick="forceStatus('SUSPICIOUS')">▲ SUSPICIOUS</button>
     <button class="ovr-btn q" onclick="forceStatus('QUARANTINED')">■ QUARANTINE</button>
-    <div class="ovr-status">
-      Server: <span id="connStatus">CONNECTED</span>
+    <button class="ovr-btn" style="border-color:#00ff88;color:#00ff88;" onclick="healSystem()">
+  🔓 HEAL SYSTEM
+</button>
+    <div class="conn-info">
+      Server: <span id="connStatus">CONNECTING…</span>
       &nbsp;·&nbsp; Poll: 3s
+      &nbsp;·&nbsp; <span id="healBadge">Heal: NORMAL</span>
     </div>
   </div>
 
 </div><!-- /shell -->
 
 <script>
-/* ══════════════════════════════════════════
-   AEIS Dashboard Script
-   ══════════════════════════════════════════ */
-const SERVER = 'http://localhost:5000';
+/* ══════════════════════════════════════════════════════
+   AEIS Dashboard — Full Script
+   ══════════════════════════════════════════════════════ */
 
-// ── Chart ────────────────────────────────────────────────────
+// Change this to your server IP if running on a different machine
+const SERVER = 'http://192.168.29.89:5000';
+
+// ── Chart ──────────────────────────────────────────────────────────────────────
 const labels = [], chartData = [];
-const chartColors = {
+const STATUS_COLORS = {
   NORMAL:      '#00ff88',
   SUSPICIOUS:  '#ffb300',
   QUARANTINED: '#ff3d3d',
 };
 let currentStatus = 'NORMAL';
 
-const chart = new Chart(
-  document.getElementById('trafficChart').getContext('2d'), {
+const chart = new Chart(document.getElementById('trafficChart').getContext('2d'), {
   type: 'line',
   data: {
     labels,
@@ -528,8 +667,7 @@ const chart = new Chart(
       data: chartData,
       borderColor: '#00d4ff',
       backgroundColor: 'rgba(0,212,255,0.06)',
-      fill: true,
-      tension: 0.45,
+      fill: true, tension: 0.45,
       pointRadius: 4,
       pointBackgroundColor: '#00d4ff',
       pointBorderColor: '#020b14',
@@ -539,203 +677,329 @@ const chart = new Chart(
   options: {
     animation: { duration: 500 },
     responsive: true,
-    interaction: { intersect: false, mode: 'index' },
     plugins: {
       legend: { labels: { color: '#2a5068', font: { family: 'JetBrains Mono', size: 10 } } }
     },
     scales: {
-      x: {
-        ticks: { color: '#2a5068', font: { family: 'JetBrains Mono', size: 9 } },
-        grid: { color: 'rgba(14,58,90,0.5)' }
-      },
-      y: {
-        ticks: { color: '#2a5068', font: { family: 'JetBrains Mono', size: 9 } },
-        grid: { color: 'rgba(14,58,90,0.5)' },
-        beginAtZero: true
-      }
+      x: { ticks:{color:'#2a5068',font:{family:'JetBrains Mono',size:9}}, grid:{color:'rgba(14,58,90,0.5)'} },
+      y: { ticks:{color:'#2a5068',font:{family:'JetBrains Mono',size:9}}, grid:{color:'rgba(14,58,90,0.5)'}, beginAtZero:true }
     }
   }
 });
 
-// ── Clock ─────────────────────────────────────────────────────
+// ── Clock + Uptime ──────────────────────────────────────────────────────────────
 function tickClock() {
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('en-GB');
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB');
 }
-setInterval(tickClock, 1000);
-tickClock();
+setInterval(tickClock, 1000); tickClock();
 
-// ── Uptime ────────────────────────────────────────────────────
 const startTime = Date.now();
 function updateUptime() {
   const s = Math.floor((Date.now() - startTime) / 1000);
   const h = String(Math.floor(s / 3600)).padStart(2,'0');
-  const m = String(Math.floor((s % 3600) / 60)).padStart(2,'0');
-  const sec = String(s % 60).padStart(2,'0');
-  document.getElementById('metaUptime').textContent = `${h}:${m}:${sec}`;
+  const m = String(Math.floor((s % 3600)/60)).padStart(2,'0');
+  const sc = String(s % 60).padStart(2,'0');
+  document.getElementById('metaUptime').textContent = `${h}:${m}:${sc}`;
 }
 setInterval(updateUptime, 1000);
 
-// ── Event log ─────────────────────────────────────────────────
+// ── Event log ───────────────────────────────────────────────────────────────────
 let _lastLogStatus = '';
 function addLog(status, msg) {
   const list = document.getElementById('logList');
-  const li   = document.createElement('li');
+  const li = document.createElement('li');
   li.className = `log-item ${status}`;
   const t = new Date().toLocaleTimeString('en-GB');
   li.innerHTML = `<span class="log-time">${t}</span><span>${msg}</span>`;
   list.prepend(li);
-  while (list.children.length > 40) list.removeChild(list.lastChild);
+  while (list.children.length > 50) list.removeChild(list.lastChild);
 }
 
-// ── Flash card ────────────────────────────────────────────────
+// ── Flash card ──────────────────────────────────────────────────────────────────
 function flash(id) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.classList.remove('flash');
   void el.offsetWidth;
   el.classList.add('flash');
 }
 
-// ── Progress bars ─────────────────────────────────────────────
+// ── Bar helper ──────────────────────────────────────────────────────────────────
 function setBar(id, pct, color) {
   const fill = document.getElementById(id);
+  if (!fill) return;
   fill.style.width = Math.min(100, Math.max(0, pct)) + '%';
   fill.style.background = color;
 }
 
-// ── Threat segments ───────────────────────────────────────────
+// ── Threat segments ─────────────────────────────────────────────────────────────
 function setThreat(level) {
-  const colors = {
-    LOW    : { active:'#00ff88', n:1 },
-    MEDIUM : { active:'#ffb300', n:2 },
-    HIGH   : { active:'#ff3d3d', n:3 },
+  const cfgMap = {
+    NORMAL:      { color:'#00ff88', n:0 },
+    LOW:         { color:'#00ff88', n:1 },
+    MEDIUM:      { color:'#ffb300', n:2 },
+    HIGH:        { color:'#ff3d3d', n:3 },
+    SUSPICIOUS:  { color:'#ffb300', n:2 },
+    QUARANTINED: { color:'#ff3d3d', n:3 },
   };
-  const cfg = colors[level] || colors.LOW;
+  const cfg = cfgMap[level] || cfgMap.NORMAL;
   document.getElementById('threatText').textContent = level;
-  document.getElementById('threatText').style.color = cfg.active;
+  document.getElementById('threatText').style.color = cfg.color;
   for (let i = 1; i <= 3; i++) {
     const seg = document.getElementById('ts'+i);
-    seg.style.background = i <= cfg.n ? cfg.active : 'var(--border)';
-    seg.style.boxShadow  = i <= cfg.n ? `0 0 8px ${cfg.active}` : 'none';
+    seg.style.background = i <= cfg.n ? cfg.color : 'var(--border)';
+    seg.style.boxShadow  = i <= cfg.n ? `0 0 8px ${cfg.color}` : 'none';
   }
 }
 
-// ── Apply status ──────────────────────────────────────────────
-function applyStatus(status, threat, rf, iso, packets, device, time) {
+// ── Rule hits display ───────────────────────────────────────────────────────────
+function updateRules(ruleHits, packets, avgSize, destCount, hour) {
+  // Rule 1: Packet flood
+  const p = packets || 0;
+  const r1lv = p >= 1500 ? 'HIGH' : p >= 700 ? 'MEDIUM' : p >= 300 ? 'LOW' : 'NORMAL';
+  setRuleUI('rule1', 'r1val', r1lv, `${p} pkt`);
+
+  // Rule 2: Packet size
+  const s = avgSize || 0;
+  const r2lv = s >= 1400 ? 'HIGH' : s >= 1200 ? 'MEDIUM' : s >= 1000 ? 'LOW' : 'NORMAL';
+  setRuleUI('rule2', 'r2val', r2lv, `${Math.round(s)}B`);
+
+  // Rule 3: Dest spread
+  const d = destCount || 0;
+  const r3lv = d >= 25 ? 'HIGH' : d >= 12 ? 'MEDIUM' : d >= 5 ? 'LOW' : 'NORMAL';
+  setRuleUI('rule3', 'r3val', r3lv, `${d} IPs`);
+
+  // Rule 4: Off-hours
+  const h = hour !== undefined ? hour : new Date().getHours();
+  const offhours = h >= 22 || h < 6;
+  const r4lv = offhours ? 'MEDIUM' : 'NORMAL';
+  setRuleUI('rule4', 'r4val', r4lv, `${String(h).padStart(2,'0')}:00`);
+}
+
+function setRuleUI(itemId, valId, level, displayVal) {
+  const item = document.getElementById(itemId);
+  const val  = document.getElementById(valId);
+  if (!item || !val) return;
+  item.className = 'rule-item' + (level !== 'NORMAL' ? ` hit-${level}` : '');
+  val.className  = `rule-val ${level}`;
+  val.textContent = displayVal;
+}
+
+// ── System flags ────────────────────────────────────────────────────────────────
+function updateFlags(data) {
+  const cam = document.getElementById('flagCamera');
+  const mon = document.getElementById('flagMonitor');
+  const blk = document.getElementById('flagBlocked');
+  const heal = document.getElementById('flagHeal');
+  const clean = document.getElementById('flagClean');
+
+  if (data.camera_active !== undefined) {
+    cam.className = 'flag-badge ' + (data.camera_active ? 'active-green' : 'active-red');
+    cam.innerHTML = `<div class="flag-dot"></div>Camera: ${data.camera_active ? 'ONLINE' : 'ISOLATED'}`;
+  }
+  if (data.monitoring_mode !== undefined) {
+    mon.className = 'flag-badge ' + (data.monitoring_mode ? 'active-amber' : '');
+    mon.innerHTML = `<div class="flag-dot"></div>Monitoring: ${data.monitoring_mode ? 'ELEVATED' : 'OFF'}`;
+  }
+  const blockedCount = Array.isArray(data.blocked_ips) ? data.blocked_ips.length : 0;
+  blk.className = 'flag-badge ' + (blockedCount > 0 ? 'active-red' : '');
+  blk.innerHTML = `<div class="flag-dot"></div>IP Blocks: ${blockedCount}`;
+
+  if (data.heal_stage) {
+    const isHealing = data.heal_stage !== 'NORMAL';
+    heal.className = 'flag-badge ' + (isHealing ? 'active-amber' : 'active-green');
+    heal.innerHTML = `<div class="flag-dot"></div>Heal: ${data.heal_stage}`;
+  }
+  if (data.clean_windows !== undefined) {
+    clean.innerHTML = `<div class="flag-dot"></div>Clean Windows: ${data.clean_windows}`;
+  }
+}
+
+// ── Apply full status update ────────────────────────────────────────────────────
+let totalReadings = 0;
+let _lastTS = 0;
+
+function applyStatus(alert) {
+  const status  = alert.status  || 'NORMAL';
+  const threat  = alert.threat  || 'NORMAL';
+  const packets = alert.packets || 0;
+
   // Banner
-  const banner    = document.getElementById('statusBanner');
-  const bannerTxt = document.getElementById('bannerStatus');
-  banner.className    = status;
-  bannerTxt.className = status;
-  bannerTxt.textContent = status;
+  const banner   = document.getElementById('statusBanner');
+  const bannerTx = document.getElementById('bannerStatus');
+  banner.className   = status;
+  bannerTx.className = status;
+  bannerTx.textContent = status;
   setThreat(threat);
 
-  // Meta
-  document.getElementById('metaDevice').textContent = device || 'Android Camera';
-  document.getElementById('metaTime').textContent   = time;
+  // Reason
+  document.getElementById('reasonText').textContent =
+    alert.reason || 'All metrics within normal range';
+  document.getElementById('metaDevice').textContent  = alert.device || 'Android Camera';
+  document.getElementById('metaTime').textContent    = new Date().toLocaleTimeString('en-GB');
+  document.getElementById('metaConf').textContent    = ((alert.confidence || 0) * 100).toFixed(1) + '%';
 
   // Metrics
-  document.getElementById('mPackets').textContent  = packets;
-  document.getElementById('mRF').textContent        = parseFloat(rf).toFixed(4);
-  document.getElementById('mISO').textContent       = parseFloat(iso).toFixed(4);
-  document.getElementById('mDecision').textContent  = status;
+  document.getElementById('mPackets').textContent = packets;
+  document.getElementById('mSize').textContent    = Math.round(alert.avg_size || 0);
+  document.getElementById('mDest').textContent    = alert.dest_count || 0;
 
-  const decEl = document.getElementById('mDecision');
-  const colors = { NORMAL:'var(--green)', SUSPICIOUS:'var(--amber)', QUARANTINED:'var(--red)' };
-  decEl.style.color = colors[status] || 'var(--blue)';
-
-  // Bars
-  setBar('barPackets', (packets / 5000) * 100, packets > 3000 ? '#ff3d3d' : packets > 1000 ? '#ffb300' : '#00ff88');
-  setBar('barRF',  rf  * 100, rf  > 0.7 ? '#ff3d3d' : rf  > 0.4 ? '#ffb300' : '#00ff88');
-  setBar('barISO', iso * 200, iso > 0.5 ? '#ff3d3d' : iso > 0.3 ? '#ffb300' : '#00ff88');
+  const pColor = packets > 1500 ? '#ff3d3d' : packets > 700 ? '#ffb300' : '#00ff88';
+  const sColor = (alert.avg_size||0) > 1400 ? '#ff3d3d' : (alert.avg_size||0) > 1200 ? '#ffb300' : '#00ff88';
+  const dColor = (alert.dest_count||0) > 25 ? '#ff3d3d' : (alert.dest_count||0) > 12 ? '#ffb300' : '#00ff88';
+  setBar('barPackets', (packets / 3000) * 100, pColor);
+  setBar('barSize',    ((alert.avg_size||0) / 1500) * 100, sColor);
+  setBar('barDest',    ((alert.dest_count||0) / 50) * 100, dColor);
 
   // Chart color follows status
-  chart.data.datasets[0].borderColor     = chartColors[status] || '#00d4ff';
-  chart.data.datasets[0].backgroundColor = (chartColors[status] || '#00d4ff') + '11';
+  chart.data.datasets[0].borderColor     = STATUS_COLORS[status] || '#00d4ff';
+  chart.data.datasets[0].backgroundColor = (STATUS_COLORS[status] || '#00d4ff') + '11';
 
-  // Flash cards
-  ['mc-packets','mc-rf','mc-iso','mc-dec'].forEach(flash);
+  // Flash metrics
+  ['mc-packets','mc-size','mc-dest'].forEach(flash);
+
+  // Rules panel
+  updateRules(alert.rule_hits || {}, packets, alert.avg_size, alert.dest_count, alert.hour);
+
+  // Flags
+  updateFlags(alert);
+
+  // Heal badge in footer
+  const healBadge = document.getElementById('healBadge');
+  const hs = alert.heal_stage || 'NORMAL';
+  healBadge.textContent = `Heal: ${hs}`;
+  healBadge.className   = hs !== 'NORMAL' ? 'active' : '';
 
   // Log on status change
   if (status !== _lastLogStatus) {
-    addLog(status, `Status changed → ${status}  |  Threat: ${threat}`);
+    const icons = { NORMAL:'🟢', SUSPICIOUS:'🟡', QUARANTINED:'🔴' };
+    addLog(status, `${icons[status]||'⚪'} Status → ${status} | Threat: ${threat} | Conf: ${((alert.confidence||0)*100).toFixed(0)}%`);
     _lastLogStatus = status;
   }
 }
 
-// ── Reading counter ───────────────────────────────────────────
-let totalReadings = 0;
-
-// ── Main poll ─────────────────────────────────────────────────
-let lastTS = 0;
-
+// ── Main poll ───────────────────────────────────────────────────────────────────
 async function poll() {
   try {
     const [tRes, aRes] = await Promise.all([
       fetch(`${SERVER}/traffic?_=${Date.now()}`),
-      fetch(`${SERVER}/alert?_=${Date.now()}`)
+      fetch(`${SERVER}/alert?_=${Date.now()}`),
     ]);
-
     const traffic = await tRes.json();
     const alert   = await aRes.json();
 
-    // Stale-data guard
+    // Stale guard
     const ts = alert.timestamp || 0;
-    if (ts && ts === lastTS) {
-      addLog('NORMAL', '⏸ No new data from server (stale)');
-      return;
-    }
-    lastTS = ts;
+    if (ts && ts === _lastTS) return;
+    _lastTS = ts;
 
     // Chart
     const t = new Date().toLocaleTimeString('en-GB');
     labels.push(t);
     chartData.push(traffic.packets || 0);
-    if (labels.length > 15) { labels.shift(); chartData.shift(); }
+    if (labels.length > 20) { labels.shift(); chartData.shift(); }
     chart.update();
 
-    // Status + metrics
-    applyStatus(
-      alert.status    || 'NORMAL',
-      alert.threat    || 'LOW',
-      alert.rf_prob   || 0,
-      alert.iso_score || 0,
-      traffic.packets || 0,
-      alert.device,
-      t
-    );
+    applyStatus(alert);
 
-    // Total counter
     totalReadings++;
     document.getElementById('mTotal').textContent = totalReadings;
 
-    // Connection indicator
     const cs = document.getElementById('connStatus');
-    cs.textContent = 'CONNECTED';
-    cs.className   = '';
+    cs.textContent = 'CONNECTED'; cs.className = '';
 
   } catch(err) {
     const cs = document.getElementById('connStatus');
-    cs.textContent = 'OFFLINE';
-    cs.className   = 'err';
-    addLog('QUARANTINED', `⚠ Server unreachable — ${err.message}`);
+    cs.textContent = 'OFFLINE'; cs.className = 'err';
+    addLog('QUARANTINED', `⚠ Server unreachable: ${err.message}`);
   }
 }
 
-// ── Manual override ───────────────────────────────────────────
+// ── Override ────────────────────────────────────────────────────────────────────
 async function forceStatus(status) {
   try {
-    const r = await fetch(`${SERVER}/force/${status}`);
-    const d = await r.json();
-    if (d.ok) addLog(status, `🎮 Manual override → ${status}`);
-    await poll();  // immediate refresh
+    await fetch(`${SERVER}/force/${status}`);
+    addLog(status, `🎮 Manual override → ${status}`);
+    await poll();
   } catch(e) {
     addLog('QUARANTINED', `Override failed: ${e.message}`);
   }
 }
 
-// ── Boot ──────────────────────────────────────────────────────
-addLog('NORMAL', '🟢 AEIS Dashboard initialised — monitoring started');
+// ── Attack simulator ────────────────────────────────────────────────────────────
+let selectedAttack = 'normal';
+
+function selectAttack(btn) {
+  document.querySelectorAll('.atk-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedAttack = btn.dataset.type;
+  document.getElementById('simFeedback').textContent = `Ready to simulate: ${selectedAttack}`;
+  document.getElementById('simFeedback').className = '';
+}
+
+function updateIntensity(slider) {
+  document.getElementById('intensityVal').textContent = parseFloat(slider.value).toFixed(1);
+}
+
+async function fireAttack() {
+  const btn = document.getElementById('fireBtn');
+  const fb  = document.getElementById('simFeedback');
+  const intensity = document.getElementById('intensitySlider').value;
+
+  btn.disabled = true;
+  fb.className = '';
+  fb.textContent = `Firing ${selectedAttack} @ ${intensity}…`;
+
+  try {
+    const url = `${SERVER}/simulate/${selectedAttack}?intensity=${intensity}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+      fb.textContent = `Error: ${data.error}`;
+      fb.className = 'err';
+    } else {
+      fb.textContent = `✓ ${data.threat_level} | ${data.reason.slice(0,60)}${data.reason.length>60?'…':''}`;
+      fb.className = data.threat_level === 'HIGH' ? 'err' : (data.threat_level === 'NORMAL' ? 'ok' : '');
+      addLog(
+        data.threat_level === 'HIGH' ? 'QUARANTINED' : data.threat_level === 'NORMAL' ? 'NORMAL' : 'SUSPICIOUS',
+        `🔬 SIM [${selectedAttack}@${intensity}] → ${data.threat_level} | ${data.reason.slice(0,55)}`
+      );
+    }
+
+    await poll();  // immediate refresh
+  } catch(e) {
+    fb.textContent = `Failed: ${e.message}`;
+    fb.className = 'err';
+  } finally {
+    setTimeout(() => { btn.disabled = false; }, 800);
+  }
+}
+
+async function healSystem() {
+  try {
+    const res = await fetch(`${SERVER}/heal`);
+
+    // 🔥 DEBUG: check response type
+    const text = await res.text();
+
+    try {
+      const data = JSON.parse(text);
+      console.log("Heal success:", data);
+      alert("System healed ✔");
+    } catch {
+      console.error("Server returned HTML:", text);
+      alert("Server error (not JSON) — check console");
+    }
+
+  } catch (e) {
+    console.error(e);
+    alert("Heal request failed");
+  }
+}
+// ── Boot ────────────────────────────────────────────────────────────────────────
+addLog('NORMAL', '🟢 AEIS Dashboard initialised — rule engine active');
+addLog('NORMAL', '📡 Polling server at ' + SERVER);
 poll();
 setInterval(poll, 3000);
 </script>

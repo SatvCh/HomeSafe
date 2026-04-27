@@ -1,13 +1,51 @@
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
 # Large datasets
 *.csv
-
-# Or specific
 raw_data*.csv
 attack_raw*.csv
 
-# ML outputs
+# ML outputs and models
 outputs_if/
 outputs_rf/
+*.pkl
+*.npy
 
-# Virtual env
-.venv/
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+
+# OS
+Thumbs.db
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
