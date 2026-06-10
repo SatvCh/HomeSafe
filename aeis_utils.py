@@ -32,73 +32,71 @@ from sklearn.metrics import (
 )
 from sklearn.utils import resample
 
-# ── Column names ────────────────────────────────────────────
+# ── Column names ─────────────────────────────────────────────
+# Must match exactly what process_data.py outputs in camera_dataset.csv
 BASE_FEATURES = [
-    "packets_per_min",
+    "packets_per_window",   # was packets_per_min — fixed to match dataset
     "avg_packet_size",
-    "activity_hour",
     "dest_count",
+    "activity_hour",
 ]
 
 ENGINEERED_FEATURES = [
-    "pkt_size_x_ppm",   # volume proxy
-    "hour_sin",          # cyclical time (avoids 23 ≠ 0 artefact)
+    "pkt_size_x_ppw",    # volume proxy  (ppw = packets per window)
+    "hour_sin",           # cyclical time encoding
     "hour_cos",
-    "ppm_sq",            # burst sensitivity
-    "size_sq",           # jumbo-frame sensitivity
-    "ppm_dest_ratio",    # scan/C2C indicator
-    "high_hour_flag",    # off-hours binary flag
+    "ppw_sq",             # burst sensitivity
+    "size_sq",            # jumbo-frame sensitivity
+    "ppw_dest_ratio",     # scan / C2C indicator
+    "high_hour_flag",     # off-hours binary flag
 ]
 
 ALL_FEATURES = BASE_FEATURES + ENGINEERED_FEATURES
 
 
-# ── Feature engineering ──────────────────────────────────────
+# ── Feature engineering ───────────────────────────────────────
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Adds 7 network-behaviour features on top of the 4 base features.
 
     Feature rationale
     -----------------
-    pkt_size_x_ppm  : Large packets at high rate → DDoS / exfiltration.
+    pkt_size_x_ppw  : Large packets at high rate → DDoS / exfiltration.
     hour_sin/cos    : Cyclical hour encoding; hour 23 ≈ hour 0.
-    ppm_sq          : Non-linear burst detection.
+    ppw_sq          : Non-linear burst detection.
     size_sq         : Non-linear jumbo-frame anomaly detection.
-    ppm_dest_ratio  : Spreading traffic across many destinations at
+    ppw_dest_ratio  : Spreading traffic across many destinations at
                       high rate → port scan / C2C beacon.
-    high_hour_flag  : Binary off-hours flag (z-score < -0.40 = night)
+    high_hour_flag  : Binary off-hours flag (hours 0–6 = night)
                       → known APT / botnet indicator.
     """
     fe = df.copy()
-    fe["pkt_size_x_ppm"] = fe["avg_packet_size"] * fe["packets_per_min"]
-    fe["hour_sin"]       = np.sin(2 * np.pi * fe["activity_hour"] / 24.0)
-    fe["hour_cos"]       = np.cos(2 * np.pi * fe["activity_hour"] / 24.0)
-    fe["ppm_sq"]         = fe["packets_per_min"] ** 2
-    fe["size_sq"]        = fe["avg_packet_size"] ** 2
-    fe["ppm_dest_ratio"] = fe["packets_per_min"] / (
+    fe["pkt_size_x_ppw"] = fe["avg_packet_size"] * fe["packets_per_window"]
+    fe["hour_sin"]        = np.sin(2 * np.pi * fe["activity_hour"] / 24.0)
+    fe["hour_cos"]        = np.cos(2 * np.pi * fe["activity_hour"] / 24.0)
+    fe["ppw_sq"]          = fe["packets_per_window"] ** 2
+    fe["size_sq"]         = fe["avg_packet_size"] ** 2
+    fe["ppw_dest_ratio"]  = fe["packets_per_window"] / (
         np.abs(fe["dest_count"]) + 1e-6
     )
-    fe["high_hour_flag"] = (fe["activity_hour"] < -0.40).astype(float)
+    # Off-hours: midnight to 6 AM (known botnet / APT window)
+    fe["high_hour_flag"]  = ((fe["activity_hour"] >= 0) &
+                              (fe["activity_hour"] < 6)).astype(float)
     return fe
 
 
-# ── SMOTE-lite (no imblearn dep) ─────────────────────────────
+# ── SMOTE-lite (no imblearn dep) ──────────────────────────────
 def smote_lite(X: np.ndarray, y: np.ndarray,
                random_state: int = 42):
     """
     Minority-class oversampling with small Gaussian noise.
-    Equivalent to SMOTE without the imblearn dependency —
-    safe for edge deployments.
-
-    Returns
-    -------
-    X_bal, y_bal : balanced, shuffled arrays
+    Equivalent to SMOTE without the imblearn dependency.
     """
     rng = np.random.default_rng(random_state)
-    classes, counts  = np.unique(y, return_counts=True)
-    minority_cls     = classes[np.argmin(counts)]
-    majority_cls     = classes[np.argmax(counts)]
-    n_majority       = counts[np.argmax(counts)]
+    classes, counts = np.unique(y, return_counts=True)
+    minority_cls    = classes[np.argmin(counts)]
+    majority_cls    = classes[np.argmax(counts)]
+    n_majority      = counts[np.argmax(counts)]
 
     X_min = X[y == minority_cls]
     X_maj = X[y == majority_cls]
@@ -118,7 +116,7 @@ def smote_lite(X: np.ndarray, y: np.ndarray,
     return X_bal[idx], y_bal[idx]
 
 
-# ── Threshold optimisation ───────────────────────────────────
+# ── Threshold optimisation ────────────────────────────────────
 def optimal_threshold(y_true: np.ndarray, y_scores: np.ndarray,
                       metric: str = "recall",
                       min_precision: float = 0.40) -> float:
@@ -139,7 +137,7 @@ def optimal_threshold(y_true: np.ndarray, y_scores: np.ndarray,
             prec_arr[:-1] + rec_arr[:-1] + 1e-9
         )
         best_idx = np.argmax(f1_arr)
-    else:                           # recall — minimise false negatives
+    else:   # recall — minimise false negatives
         valid    = prec_arr[:-1] >= min_precision
         if not valid.any():
             valid = np.ones(len(thresh_arr), dtype=bool)
@@ -147,7 +145,7 @@ def optimal_threshold(y_true: np.ndarray, y_scores: np.ndarray,
     return float(thresh_arr[best_idx])
 
 
-# ── Metrics printer ──────────────────────────────────────────
+# ── Metrics printer ───────────────────────────────────────────
 def print_metrics(name: str, y_true, y_pred,
                   y_scores=None) -> dict:
     acc  = accuracy_score(y_true, y_pred)
@@ -179,10 +177,10 @@ def print_metrics(name: str, y_true, y_pred,
     }
 
 
-# ── Plot helpers ─────────────────────────────────────────────
+# ── Plot helpers ──────────────────────────────────────────────
 def save_cm(y_true, y_pred, title: str,
             output_dir: str, fname: str) -> None:
-    cm  = confusion_matrix(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(5, 4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
                 xticklabels=["Normal", "Attack"],

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEIS — Attack Simulator</title>
+  <meta name="description" content="HomeSafe AEIS — Parameter-Driven Attack Simulator with continuous ML detection.">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="simulate.css">
+</head>
+
+<body>
+  <div class="shell">
+
+    <!-- ══ HEADER ══ -->
+    <header>
+      <div class="header-left">
+        <div class="sim-icon">⚡</div>
+        <div class="brand">
+          <h1>Attack Simulator</h1>
+          <p>AEIS · Parameter-Driven Detection · v3.0</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="srv-indicator">
+          <div class="srv-dot" id="srvDot"></div>
+          <span id="srvStatus">CHECKING…</span>
+        </div>
+        <div id="clock">--:--:--</div>
+        <a href="index.html" class="back-btn">← Dashboard</a>
+      </div>
+    </header>
+
+    <!-- ══ MAIN GRID ══ -->
+    <div class="sim-grid">
+
+      <!-- ── LEFT: Control Panel ── -->
+      <div class="panel control-panel">
+
+        <!-- SYNTHETIC CONTROLS -->
+        <div id="syntheticControls">
+          <div class="panel-title">🎛️ Parameter Control</div>
+
+          <!-- Device -->
+          <div class="section-label">Target Device</div>
+          <div class="device-tabs" id="deviceTabs">
+            <button class="dev-tab active" data-dev="cam1" id="tab-cam1"><span class="tab-dot dot-green"></span>Cam
+              1</button>
+            <button class="dev-tab" data-dev="cam2" id="tab-cam2"><span class="tab-dot dot-blue"></span>Cam 2</button>
+            <button class="dev-tab" data-dev="both" id="tab-both"><span class="tab-dot dot-purple"></span>Both</button>
+          </div>
+
+          <!-- Presets -->
+          <div class="section-label">Quick Presets</div>
+          <div class="preset-grid">
+            <button class="preset-btn p-normal" data-preset="normal" id="preset-normal">▶ Normal</button>
+            <button class="preset-btn p-ddos" data-preset="ddos" id="preset-ddos">⚡ DDoS</button>
+            <button class="preset-btn p-scan" data-preset="scan" id="preset-scan">⬡ Port Scan</button>
+            <button class="preset-btn p-exfil" data-preset="exfil" id="preset-exfil">📤 Exfiltration</button>
+            <button class="preset-btn p-timing" data-preset="timing" id="preset-timing">⏱ Off-Hours</button>
+            <button class="preset-btn p-extreme" data-preset="extreme" id="preset-extreme">☠ Extreme</button>
+          </div>
+
+          <!-- Parameters -->
+          <div class="section-label">Feature Parameters</div>
+          <div class="params-grid">
+
+            <div class="param-row" id="row-packets">
+              <div class="param-header">
+                <label class="param-label">Packets / Window</label>
+                <div class="param-badge" id="badge-packets">NORMAL</div>
+              </div>
+              <div class="param-controls">
+                <input type="range" class="param-slider" id="sl-packets" min="0" max="20000" step="100" value="6000">
+                <input type="number" class="param-num" id="in-packets" min="0" max="20000" value="6000">
+              </div>
+              <div class="param-ticks"><span>0</span><span class="t-warn">9K</span><span
+                  class="t-danger">12K</span><span>20K</span></div>
+            </div>
+
+            <div class="param-row" id="row-size">
+              <div class="param-header">
+                <label class="param-label">Avg Packet Size (bytes)</label>
+                <div class="param-badge" id="badge-size">NORMAL</div>
+              </div>
+              <div class="param-controls">
+                <input type="range" class="param-slider" id="sl-size" min="0" max="1600" step="10" value="1200">
+                <input type="number" class="param-num" id="in-size" min="0" max="1600" value="1200">
+              </div>
+              <div class="param-ticks"><span class="t-danger">&lt;600</span><span>600</span><span
+                  class="t-warn">1350</span><span class="t-danger">1450+</span></div>
+            </div>
+
+            <div class="param-row" id="row-dest">
+              <div class="param-header">
+                <label class="param-label">Dest IP Changes</label>
+                <div class="param-badge" id="badge-dest">NORMAL</div>
+              </div>
+              <div class="param-controls">
+                <input type="range" class="param-slider" id="sl-dest" min="1" max="30" step="1" value="2">
+                <input type="number" class="param-num" id="in-dest" min="1" max="30" value="2">
+              </div>
+              <div class="param-ticks"><span>1</span><span class="t-warn">5</span><span
+                  class="t-danger">10</span><span>30</span></div>
+            </div>
+
+            <div class="param-row" id="row-hour">
+              <div class="param-header">
+                <label class="param-label">Activity Hour (0–23)</label>
+                <div class="param-badge badge-info" id="badge-hour">ANY</div>
+              </div>
+              <div class="param-controls">
+                <input type="range" class="param-slider" id="sl-hour" min="0" max="23" step="1" value="23">
+                <input type="number" class="param-num" id="in-hour" min="0" max="23" value="23">
+              </div>
+              <div class="param-ticks"><span>0</span><span>6</span><span>12</span><span>23</span></div>
+            </div>
+
+            <div class="param-row duration-row" id="row-duration">
+              <div class="param-header">
+                <label class="param-label">⏱ Duration (seconds)</label>
+                <div class="duration-display"><span id="dur-val">30</span>s</div>
+              </div>
+              <div class="param-controls">
+                <input type="range" class="param-slider dur-slider" id="sl-duration" min="5" max="120" step="5"
+                  value="30">
+                <input type="number" class="param-num" id="in-duration" min="5" max="120" value="30">
+              </div>
+              <div class="param-ticks"><span>5s</span><span>30s</span><span>60s</span><span>120s</span></div>
+            </div>
+
+          </div>
+
+          <!-- Expected classification -->
+          <div class="expected-block">
+            <span class="exp-label">Expected:</span>
+            <div class="exp-badge NORMAL" id="exp-badge">NORMAL</div>
+            <span class="exp-threat" id="exp-threat">LOW RISK</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="action-row">
+            <button class="run-btn" id="runBtn">⚡ Start Simulation</button>
+            <button class="stop-btn" id="stopBtn" disabled>■ Stop</button>
+          </div>
+        </div><!-- /syntheticControls -->
+
+        <!-- REAL TRAFFIC CONTROLS -->
+        <div id="realControls" style="display:none">
+          <div class="panel-title">📡 Real Traffic Capture</div>
+
+          <div class="section-label">Camera IP (optional)</div>
+          <input type="text" class="real-input" id="realDeviceIp"
+            placeholder="e.g. 192.168.137.168  (blank = all traffic)">
+
+          <div class="section-label">Network Interface</div>
+          <input type="text" class="real-input" id="realInterface" value="Wi-Fi" placeholder="Wi-Fi / Ethernet / eth0">
+
+          <div class="section-label">Window Duration (seconds)</div>
+          <div class="real-window-row">
+            <input type="range" class="param-slider" id="realWindowSl" min="2" max="30" step="1" value="5">
+            <input type="number" class="param-num" id="realWindowNum" min="2" max="30" value="5">
+            <span class="real-win-label">s / window</span>
+          </div>
+
+          <div class="real-info-box">
+            <div class="rib-title">How Real Mode Works</div>
+            <div class="rib-body">
+              Scapy captures packets on your network interface.<br>
+              Every <span id="ribWindow">5</span>s, features are extracted and sent to the ML pipeline.<br>
+              Dashboard updates automatically via <code>/data</code>.
+            </div>
+          </div>
+
+          <div class="capture-status-row" id="captureStatusRow">
+            <div class="cs-dot" id="csDot"></div>
+            <span id="csText">Capture stopped</span>
+          </div>
+
+          <div class="action-row">
+            <button class="run-btn" id="realStartBtn">📡 Start Capture</button>
+            <button class="stop-btn" id="realStopBtn" disabled>■ Stop Capture</button>
+          </div>
+
+          <div class="real-note">
+            ⚠ Requires Scapy + Npcap (Windows) / libpcap (Linux/Mac).<br>
+            Run server.py with administrator / sudo privileges for raw capture.
+          </div>
+        </div><!-- /realControls -->
+
+      </div><!-- /control-panel -->
+
+      <!-- ── RIGHT: Live Results Panel ── -->
+      <div class="panel result-panel" id="resultPanel">
+
+        <div class="result-header">
+          <div class="result-status-block">
+            <div class="rs-label">System Status</div>
+            <div class="rs-badge NORMAL" id="rStatus">NORMAL</div>
+          </div>
+          <div class="result-counters">
+            <div class="counter-item">
+              <div class="ctr-label">Time Left</div>
+              <div class="ctr-val" id="timerVal">—</div>
+            </div>
+            <div class="counter-item">
+              <div class="ctr-label">Detections</div>
+              <div class="ctr-val" id="iterVal">0</div>
+            </div>
+            <div class="counter-item">
+              <div class="ctr-label">Target</div>
+              <div class="ctr-val" id="rDevice">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="threat-row">
+          <span class="threat-label">Threat Level</span>
+          <div class="threat-bar">
+            <div class="threat-seg" id="ts1"></div>
+            <div class="threat-seg" id="ts2"></div>
+            <div class="threat-seg" id="ts3"></div>
+          </div>
+          <span id="threatText" class="threat-text">LOW</span>
+        </div>
+
+        <div class="scores-row">
+          <div class="score-card">
+            <div class="score-label">RF Probability</div>
+            <div class="score-val" id="rRfProb">—</div>
+          </div>
+          <div class="score-card">
+            <div class="score-label">ISO Score</div>
+            <div class="score-val" id="rIsoScore">—</div>
+          </div>
+        </div>
+
+        <div class="feat-summary">
+          <div class="fs-title">Last Sent Features</div>
+          <div class="fs-grid">
+            <div class="fs-item"><span class="fs-k">Packets</span><span class="fs-v" id="fPackets">—</span></div>
+            <div class="fs-item"><span class="fs-k">Avg Size</span><span class="fs-v" id="fSize">—</span></div>
+            <div class="fs-item"><span class="fs-k">Dest IPs</span><span class="fs-v" id="fDest">—</span></div>
+            <div class="fs-item"><span class="fs-k">Hour</span><span class="fs-v" id="fHour">—</span></div>
+          </div>
+        </div>
+
+        <div class="live-log">
+          <div class="log-header">
+            <span class="log-title">Live Detection Log</span>
+            <span class="log-pulse" id="logPulse"></span>
+          </div>
+          <ul class="log-list" id="logList"></ul>
+        </div>
+
+      </div>
+    </div><!-- /sim-grid -->
+
+    <!-- ══ SESSION HISTORY ══ -->
+    <div class="panel history-panel">
+      <div class="panel-title">📋 Session History</div>
+      <ul class="hist-list" id="historyList">
+        <li class="hist-empty">No simulations run yet.</li>
+      </ul>
+    </div>
+
+  </div><!-- /shell -->
+  <script src="simulate.js"></script>
+</body>
+
+</html>

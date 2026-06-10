@@ -11,8 +11,8 @@ total_rows = 0
 for chunk in pd.read_csv(
     input_file,
     chunksize=chunk_size,
-    encoding="utf-16",   # <-- CHANGE HERE
-    sep="\t"             # IMPORTANT: default tshark separator is TAB
+    encoding="utf-16",   
+    sep="\t"            
 ):
     chunks.append(chunk)
     total_rows += len(chunk)

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeSafe — IoT Security Dashboard</title>
+  <meta name="description" content="HomeSafe AI-Based Edge Intrusion System — IoT security monitoring dashboard">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <div class="shell">
+
+    <!-- ══ GLOBAL HEADER ══ -->
+    <header>
+      <div class="header-left">
+        <div class="home-icon">🏠</div>
+        <div class="brand">
+          <h1>HomeSafe</h1>
+          <p>AI-Based Edge Intrusion System &nbsp;·&nbsp; v2.0</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="simulate.html" target="_blank" class="sim-launch-btn" id="simLaunchBtn">
+          ⚡ Simulator
+        </a>
+        <div class="live-badge">
+          <div class="live-dot"></div>Live Monitor
+        </div>
+        <div id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <!-- ══ BREADCRUMB ══ -->
+    <div class="breadcrumb-bar" id="breadcrumb">
+      <span class="bc-current">Home</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SCREEN 1: HOME
+         ═══════════════════════════════════════ -->
+    <div class="screen active" id="screen-home">
+      <div class="home-title">IoT Device Categories</div>
+      <div class="category-grid" id="categoryGrid"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SCREEN 2: CATEGORY DEVICE LIST
+         ═══════════════════════════════════════ -->
+    <div class="screen" id="screen-category">
+      <div class="home-title" id="categoryTitle">Devices</div>
+      <div class="device-grid" id="deviceGrid"></div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SCREEN 3: CCTV MULTI-CAMERA DASHBOARD
+         ═══════════════════════════════════════ -->
+    <div class="screen" id="screen-cctv">
+      <div class="cctv-layout">
+
+        <!-- LEFT: Camera Sidebar -->
+        <div class="cam-sidebar">
+          <div class="sidebar-title">Camera Feeds</div>
+          <div id="camList"></div>
+        </div>
+
+        <!-- RIGHT: Dashboard (monitoring only) -->
+        <div class="cctv-content">
+
+          <!-- ══ ISOLATION OVERLAY — compact banner at top when QUARANTINED ══ -->
+          <div id="isolationOverlay" class="isolation-overlay" style="display:none">
+            <div class="iso-inner">
+              <div class="iso-icon">🔴</div>
+              <div>
+                <div class="iso-title">FEED TERMINATED</div>
+                <div class="iso-sub">Device Isolated — Network Access Blocked</div>
+              </div>
+              <div class="iso-cam-name" id="isoCamName">—</div>
+            </div>
+            <div class="iso-badge">■ QUARANTINED</div>
+            <div class="iso-scanline"></div>
+          </div>
+
+          <!-- Status Banner -->
+          <div id="statusBanner" class="NORMAL">
+            <div class="banner-left">
+              <div class="banner-label">System Status</div>
+              <div id="bannerStatus" class="NORMAL">NORMAL</div>
+              <div id="isolatedBadge" class="isolated-badge">■ ISOLATED</div>
+              <div class="threat-row">
+                <div class="threat-label">Threat&nbsp;Level</div>
+                <div class="threat-bar">
+                  <div class="threat-seg" id="ts1"></div>
+                  <div class="threat-seg" id="ts2"></div>
+                  <div class="threat-seg" id="ts3"></div>
+                </div>
+                <span id="threatText" style="font-size:0.65rem;color:var(--green);letter-spacing:1px">LOW</span>
+              </div>
+            </div>
+            <div class="banner-right">
+              <div class="meta-row">
+                <div class="meta-item">Device <span id="metaDevice">—</span></div>
+                <div class="meta-item">IP <span id="metaCamIP">—</span></div>
+                <div class="meta-item">Last Update <span id="metaTime">—</span></div>
+                <div class="meta-item">Uptime <span id="metaUptime">00:00:00</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══ HEALING PANEL — shown during QUARANTINED/HEALING/RECOVERING ══ -->
+          <div id="healPanel" class="heal-panel" style="display:none">
+            <div id="healLabel" class="heal-label">HEALING</div>
+            <div class="heal-info">
+              <div id="healPhaseInfo" style="font-size:0.58rem;color:var(--dim)">Monitoring for stable traffic…</div>
+              <div class="heal-bar-wrap">
+                <div class="heal-bar-track">
+                  <div id="healBarFill" class="heal-bar-fill" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+            <div id="healCooldown" class="heal-cooldown" style="display:none">⏱ <span id="healCooldownVal">15</span>s
+            </div>
+            <div class="heal-mem">Immune Memory: <span id="healMemCount">0</span> pattern(s)</div>
+
+          </div>
+
+          <!-- Dashboard Metrics Panel -->
+          <div class="metrics">
+            <div class="metric-card" id="mc-packets">
+              <div class="m-label">No. of Packets</div>
+              <div class="m-value" id="mPackets">0</div>
+              <div class="m-unit">packets per window</div>
+              <div class="m-bar">
+                <div class="m-bar-fill" id="barPackets"></div>
+              </div>
+            </div>
+            <div class="metric-card" id="mc-packetsize">
+              <div class="m-label">Packet Size</div>
+              <div class="m-value" id="mPacketSize">0</div>
+              <div class="m-unit">avg bytes per packet</div>
+              <div class="m-bar">
+                <div class="m-bar-fill" id="barPacketSize"></div>
+              </div>
+            </div>
+            <div class="metric-card" id="mc-destchanges">
+              <div class="m-label">Dest IP Changes</div>
+              <div class="m-value" id="mDestChanges">0</div>
+              <div class="m-unit">unique destinations</div>
+              <div class="m-bar">
+                <div class="m-bar-fill" id="barDestChanges"></div>
+              </div>
+            </div>
+            <div class="metric-card" id="mc-activityhour">
+              <div class="m-label">Activity Hour</div>
+              <div class="m-value" id="mActivityHour">0</div>
+              <div class="m-unit">current hour pattern</div>
+              <div class="m-bar">
+                <div class="m-bar-fill" id="barActivityHour"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart + Log -->
+          <div class="bottom-row">
+            <div class="panel">
+              <div class="panel-title">Network Traffic — Live Feed</div>
+              <canvas id="trafficChart" height="160"></canvas>
+            </div>
+            <div class="panel">
+              <div class="panel-title">Event Log</div>
+              <ul id="logList"></ul>
+            </div>
+          </div>
+
+          <!-- Server connection indicator -->
+          <div class="override-bar" id="connBar">
+            <div class="override-label">Server Status:</div>
+            <div class="ovr-status">
+              <span id="connStatus">CHECKING…</span>&nbsp;·&nbsp;Poll: 3 s
+            </div>
+          </div>
+
+        </div><!-- /cctv-content -->
+      </div><!-- /cctv-layout -->
+    </div><!-- /screen-cctv -->
+
+  </div><!-- /shell -->
+
+  <script src="app.js"></script>
+</body>
+
+</html>

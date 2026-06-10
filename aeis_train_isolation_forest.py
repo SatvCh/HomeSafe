@@ -27,6 +27,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from sklearn.ensemble import IsolationForest
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, recall_score
 import joblib
 
@@ -42,36 +43,49 @@ from aeis_utils import (
 # ─────────────────────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────────────────────
-DATA_DIR     = "."
-OUTPUT_DIR   = "outputs_if"
-RANDOM_STATE = 42
+DATASET_PATH  = "camera_dataset.csv"
+OUTPUT_DIR    = "outputs_if"
+RANDOM_STATE  = 42
+TEST_SIZE     = 0.20
+CONTAMINATION = 0.20   # matches ~20% attack ratio in dataset
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 np.random.seed(RANDOM_STATE)
 
 # ─────────────────────────────────────────────────────────────
-# 1.  LOAD DATA
+# 1.  LOAD & SPLIT DATA
 # ─────────────────────────────────────────────────────────────
 print("=" * 60)
 print("  AEIS — ISOLATION FOREST TRAINING")
 print("=" * 60)
-print("\n[1] Loading data...")
+print("\n[1] Loading data from camera_dataset.csv ...")
 
-X_train = pd.read_csv(os.path.join(DATA_DIR, "X_train.csv"))
-X_test  = pd.read_csv(os.path.join(DATA_DIR, "X_test.csv"))
-y_train = pd.read_csv(os.path.join(DATA_DIR, "y_train.csv")).squeeze()
-y_test  = pd.read_csv(os.path.join(DATA_DIR, "y_test.csv")).squeeze()
+df = pd.read_csv(DATASET_PATH)
 
-X_train.columns = BASE_FEATURES
-X_test.columns  = BASE_FEATURES
+required = BASE_FEATURES + ["label"]
+missing  = [c for c in required if c not in df.columns]
+if missing:
+    raise ValueError(f"Missing columns {missing}. Found: {list(df.columns)}")
 
-print(f"   X_train : {X_train.shape}  |  X_test : {X_test.shape}")
-print(f"   Train   → Normal: {(y_train==0).sum()}  "
-      f"Attack: {(y_train==1).sum()}  "
-      f"({y_train.mean()*100:.1f}% attack)")
-print(f"   Test    → Normal: {(y_test==0).sum()}   "
-      f"Attack: {(y_test==1).sum()}   "
-      f"({y_test.mean()*100:.1f}% attack)")
+X = df[BASE_FEATURES]
+y = df["label"]
+
+pct_attack = y.mean() * 100
+print(f"   Dataset : {len(df)} rows")
+print(f"   Balance : {100-pct_attack:.1f}% normal / {pct_attack:.1f}% attack")
+
+if pct_attack > 35:
+    print(f"\n   ⚠️  WARNING: Attack ratio is {pct_attack:.1f}%.")
+    print(f"   Isolation Forest works best when attacks are <25% of data.")
+    print(f"   Re-run process_data.py to get an 80/20 dataset first.\n")
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=TEST_SIZE, stratify=y, random_state=RANDOM_STATE
+)
+
+print(f"   Split   : {len(X_train)} train / {len(X_test)} test  (80/20)")
+print(f"   Train   → Normal: {(y_train==0).sum()}  Attack: {(y_train==1).sum()}")
+print(f"   Test    → Normal: {(y_test==0).sum()}   Attack: {(y_test==1).sum()}")
 
 # ─────────────────────────────────────────────────────────────
 # 2.  FEATURE ENGINEERING
@@ -89,52 +103,51 @@ y_tr = y_train.values.astype(int)
 y_te = y_test.values.astype(int)
 
 # ─────────────────────────────────────────────────────────────
-# 3.  TRAIN ISOLATION FOREST
+# 3.  TRAIN ISOLATION FOREST — NORMAL TRAFFIC ONLY
 # ─────────────────────────────────────────────────────────────
 print("\n[3] Training Isolation Forest...")
 print("""
    Design choices
    --------------
-   contamination  : Derived from actual normal fraction in training
-                    data (not a fixed guess). This directly sets the
-                    anomaly score boundary.
-   n_estimators   : 300 for score stability on small datasets.
-   Training set   : Full training set (normal + attack), because
-                    83% of samples are attacks — training on
-                    normal-only would discard most data. The
-                    contamination parameter compensates.
-   Threshold      : Optimised via Precision-Recall curve on training
-                    scores (no test leakage), targeting max recall
-                    to minimise missed attacks.
+   Training data  : NORMAL samples only.
+                    IF learns what normal looks like, then flags
+                    ANY deviation — including novel zero-day attacks
+                    it has never seen. This is the correct unsupervised
+                    approach. Labels are NOT used during training.
+   contamination  : 0.20 — matches the ~20% attack ratio in dataset.
+   n_estimators   : 300 for score stability.
+   Threshold      : Optimised via Precision-Recall curve on the FULL
+                    training set (no test leakage), targeting max F1.
 """)
 
-# Data-driven contamination
-contamination = round(float((y_tr == 0).mean()), 4)
-print(f"   Contamination (data-driven) : {contamination:.4f}  "
-      f"= {(y_tr==0).sum()} normals / {len(y_tr)} total")
+# ── Train on NORMAL only ──────────────────────────────────────
+X_tr_normal = X_tr[y_tr == 0]
+print(f"   Normal training samples : {len(X_tr_normal)}")
+print(f"   Attack samples withheld : {(y_tr==1).sum()}  "
+      f"(used only for evaluation)")
+print(f"   Contamination           : {CONTAMINATION}")
 
 iso = IsolationForest(
     n_estimators=300,
-    contamination=contamination,
+    contamination=CONTAMINATION,
     max_features=1.0,
     max_samples="auto",
     random_state=RANDOM_STATE,
     n_jobs=-1,
 )
-iso.fit(X_tr)
+iso.fit(X_tr_normal)   # ← normal only — this is the key
 
 # ─────────────────────────────────────────────────────────────
 # 4.  THRESHOLD OPTIMISATION
 # ─────────────────────────────────────────────────────────────
-print("\n[4] Optimising anomaly threshold (target: max recall)...")
+print("\n[4] Optimising anomaly threshold (target: max F1)...")
 
-# Score on training set to find threshold — no test leakage
+# Score on FULL training set (normal + attack) for calibration
 iso_scores_tr = -iso.score_samples(X_tr)   # higher = more anomalous
 iso_scores_te = -iso.score_samples(X_te)
 
-threshold = optimal_threshold(y_tr, iso_scores_tr, metric="recall")
+threshold = optimal_threshold(y_tr, iso_scores_tr, metric="f1")
 print(f"   Optimised threshold : {threshold:.5f}")
-print(f"   (v1 used fixed binary predict — no threshold control)")
 
 iso_pred = (iso_scores_te >= threshold).astype(int)
 
@@ -146,7 +159,7 @@ print("\n" + "-" * 50)
 result = print_metrics("Isolation Forest", y_te, iso_pred, iso_scores_te)
 print("-" * 50)
 
-# ── Overfitting check ────────────────────────────────────────
+# ── Overfitting check ─────────────────────────────────────────
 iso_pred_tr  = (iso_scores_tr >= threshold).astype(int)
 train_f1     = f1_score(y_tr, iso_pred_tr, zero_division=0)
 test_f1      = result["f1"]
@@ -163,17 +176,16 @@ print(f"   {'Recall':<12} {train_recall:>8.4f} {test_recall:>8.4f} "
 if abs(train_f1 - test_f1) < 0.05:
     print("   ✅ No overfitting detected (gap < 0.05).")
 else:
-    print("   ⚠️  Gap > 0.05 — model may be overfit. "
-          "Try reducing n_estimators.")
+    print("   ⚠️  Gap > 0.05 — model may be overfit.")
 
 # ─────────────────────────────────────────────────────────────
 # 7.  DRIFT / ROBUSTNESS TEST
 # ─────────────────────────────────────────────────────────────
 print("\n[7] Robustness test — simulating feature drift / sensor noise...")
 
-rng         = np.random.default_rng(RANDOM_STATE)
+rng          = np.random.default_rng(RANDOM_STATE)
 noise_levels = [0.0, 0.05, 0.10, 0.20, 0.30, 0.50]
-drift_rows  = []
+drift_rows   = []
 
 for sigma in noise_levels:
     noise   = rng.normal(0, sigma, X_te.shape)
@@ -236,9 +248,6 @@ print(f"   ✅ outputs_if/cm_isolation_forest.png")
 print(f"   ✅ outputs_if/roc_isolation_forest.png")
 print(f"   ✅ outputs_if/drift_robustness_if.png")
 
-# ─────────────────────────────────────────────────────────────
-# 10. INFERENCE SNIPPET
-# ─────────────────────────────────────────────────────────────
 print("\n" + "=" * 60)
 print("  INFERENCE USAGE")
 print("=" * 60)
@@ -250,12 +259,12 @@ print("""
   iso       = joblib.load("outputs_if/model_isolation_forest.pkl")
   threshold = float(np.load("outputs_if/iso_threshold.npy"))
 
-  def detect(packets_per_min, avg_packet_size,
-             activity_hour, dest_count):
-      raw  = pd.DataFrame([[packets_per_min, avg_packet_size,
-                             activity_hour, dest_count]],
-                           columns=["packets_per_min","avg_packet_size",
-                                    "activity_hour","dest_count"])
+  def detect(packets_per_window, avg_packet_size,
+             dest_count, activity_hour):
+      raw   = pd.DataFrame([[packets_per_window, avg_packet_size,
+                              dest_count, activity_hour]],
+                            columns=["packets_per_window", "avg_packet_size",
+                                     "dest_count", "activity_hour"])
       feat  = engineer_features(raw).values
       score = -iso.score_samples(feat)[0]   # higher = more anomalous
       return {
